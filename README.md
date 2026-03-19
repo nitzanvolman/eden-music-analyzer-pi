@@ -10,13 +10,31 @@ SuperCollider-based audio analyzer that runs headless on a Raspberry Pi and emit
 
 ## Install
 
-### Automated (recommended)
+### Quick install (redFrik standalone — pre-built, 5 min)
 
 ```bash
 chmod +x install.sh
-./install.sh            # does everything below automatically
-# Optional: set up systemd service for auto-start on boot
-./install.sh --systemd
+./install.sh
+```
+
+Uses [redFrik's pre-built SuperCollider standalone](https://github.com/redFrik/supercolliderStandaloneRPI64) — SC 3.13.0 with sc3-plugins included. No compilation. Single maintainer's personal repo.
+
+### Safe install (build from source — 60-90 min on Pi 4)
+
+```bash
+chmod +x install.sh
+./install.sh --from-source
+```
+
+Builds SC and sc3-plugins from the official repos. No third-party binary dependency. Takes longer but you get the latest SC version and full control.
+
+### Optional: autostart on boot
+
+Add `--systemd` to either mode:
+
+```bash
+./install.sh --systemd                # with redFrik standalone
+./install.sh --from-source --systemd  # with source build
 ```
 
 After install, **reboot** so that real-time audio limits and CPU governor take effect.
@@ -27,23 +45,57 @@ After install, **reboot** so that real-time audio limits and CPU governor take e
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y jackd2 libjack-jackd2-dev libqt5network5 \
-  libqt5sensors5 libqt5positioning5 libfftw3-3 \
-  libsndfile1 libasound2 liblo-tools git
+sudo apt-get install -y jackd2 libjack-jackd2-dev libfftw3-3 libfftw3-dev \
+  libsndfile1 libsndfile1-dev libasound2 liblo-tools git
+# For redFrik standalone only (pre-built binaries need Qt runtime):
+sudo apt-get install -y libqt5network5 libqt5sensors5 libqt5positioning5
+# For building from source only:
+sudo apt-get install -y build-essential cmake libxt-dev libavahi-client-dev \
+  libudev-dev libreadline-dev
 ```
 
-#### 2. SuperCollider (redFrik standalone)
+#### 2. SuperCollider
 
-This project uses [redFrik's pre-built SuperCollider standalone](https://github.com/redFrik/supercolliderStandaloneRPI64) — a self-contained SC 3.13.0 with sc3-plugins (Chromagram, Tartini, etc.) included. No compilation required.
+**Option A: redFrik standalone** (what `./install.sh` does)
 
 ```bash
-git clone https://github.com/redFrik/supercolliderStandaloneRPI64.git \
+git clone --depth 1 https://github.com/redFrik/supercolliderStandaloneRPI64.git \
   ~/supercolliderStandaloneRPI64
 ```
 
-This gives you `sclang` and `scsynth` binaries ready to run on Pi 3/4/5 (64-bit). The repo is ~200MB.
+Pre-built SC 3.13.0 + sc3-plugins for Pi 3/4/5 (64-bit). ~200MB download.
 
-> **Alternative: build from source** — only needed if you require SC 3.14+. See the [official Pi build guide](https://github.com/supercollider/supercollider/blob/develop/README_RASPBERRY_PI.md). Expect 30-60 min compile time on Pi 4.
+**Option B: build from source** (what `./install.sh --from-source` does)
+
+```bash
+# SuperCollider (sclang needs Qt even headless — only the IDE is disabled)
+sudo apt-get install -y build-essential cmake qtbase5-dev libqt5svg5-dev \
+  libqt5websockets5-dev libxt-dev libavahi-client-dev libudev-dev libreadline-dev
+git clone --depth 1 --recurse-submodules \
+  https://github.com/supercollider/supercollider.git ~/supercollider-src
+cd ~/supercollider-src && mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release -DSUPERNOVA=OFF -DSC_IDE=OFF \
+  -DNO_X11=ON -DNATIVE=ON -DSC_EL=OFF -DSC_VIM=OFF
+make -j2   # -j2 to avoid OOM on Pi 3 (1GB RAM)
+sudo make install && sudo ldconfig
+
+# sc3-plugins (Tartini pitch tracker, etc.)
+git clone --depth 1 --recurse-submodules \
+  https://github.com/supercollider/sc3-plugins.git ~/sc3-plugins-src
+cd ~/sc3-plugins-src && mkdir build && cd build
+cmake .. -DSC_PATH=~/supercollider-src -DCMAKE_BUILD_TYPE=Release -DSUPERNOVA=OFF
+make -j2
+sudo make install
+
+# SCMIRUGens (Chromagram — NOT part of sc3-plugins, separate project)
+git clone --depth 1 https://github.com/spluta/SCMIRUGens.git ~/scmir-ugens-src
+cd ~/scmir-ugens-src && mkdir build && cd build
+cmake .. -DSC_PATH=~/supercollider-src -DCMAKE_BUILD_TYPE=Release
+make -j2
+sudo make install
+```
+
+This installs `sclang` and `scsynth` to `/usr/local/bin/`. Build takes 30-60 min on Pi 4, 60-90 min on Pi 3. Use `-j2` (not `-j4`) to avoid running out of memory on 1GB Pi models.
 
 #### 3. JACK audio configuration
 
@@ -100,8 +152,16 @@ This file is sourced by `autostart.sh`, the systemd service, and can be sourced 
 
 ```bash
 source ~/sc-osc/config.env
-cd ~/supercolliderStandaloneRPI64
-./sclang ~/sc-osc/analyzer.scd
+export QT_QPA_PLATFORM=offscreen
+
+# install.sh writes the sclang path to this file:
+SCLANG="$(cat ~/sc-osc/.sclang_path)"
+
+# Test with hello.scd first:
+$SCLANG ~/sc-osc/hello.scd
+
+# Then run the full analyzer:
+$SCLANG ~/sc-osc/analyzer.scd
 ```
 
 ### Headless autostart (crontab)

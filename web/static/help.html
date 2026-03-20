@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SC-OSC — Analysis Reference</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bg: #0a0a1a;
+  --surface: #0f1029;
+  --accent: #e94560;
+  --cyan: #00e5ff;
+  --gold: #ffd700;
+  --dim: #2a2a4a;
+  --text: #c0c0d8;
+  --text-dim: #5a5a7a;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'JetBrains Mono', monospace; background: var(--bg); color: var(--text); line-height: 1.7; }
+.nav { display: flex; gap: 1.5rem; padding: 1rem 1.5rem; background: var(--surface); border-bottom: 1px solid var(--dim); font-family: 'Orbitron', sans-serif; font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; }
+.nav a { color: var(--text-dim); text-decoration: none; }
+.nav a:hover, .nav a.active { color: var(--accent); }
+.content { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; }
+h1 { font-family: 'Orbitron', sans-serif; font-size: 1.6rem; color: var(--accent); margin-bottom: 0.5rem; }
+h1 + p { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 2rem; }
+.feature { background: var(--surface); border: 1px solid var(--dim); border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; position: relative; overflow: hidden; }
+.feature::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0.3; }
+.feature h2 { font-family: 'Orbitron', sans-serif; font-size: 0.95rem; color: #fff; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem; }
+.feature h2 .osc { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 400; color: var(--cyan); background: rgba(0,229,255,0.08); padding: 0.15rem 0.5rem; border-radius: 4px; }
+.feature h2 .rate { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; font-weight: 300; color: var(--text-dim); }
+.feature p { font-size: 0.82rem; color: var(--text); margin-bottom: 0.5rem; }
+.feature .detail { font-size: 0.75rem; color: var(--text-dim); }
+.feature .detail strong { color: var(--gold); font-weight: 500; }
+.feature .values { display: inline-block; background: rgba(233,69,96,0.08); border: 1px solid rgba(233,69,96,0.15); border-radius: 4px; padding: 0.15rem 0.5rem; font-size: 0.72rem; color: var(--accent); margin-top: 0.25rem; }
+.section-label { font-family: 'Orbitron', sans-serif; font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-dim); margin: 2rem 0 0.75rem; padding-bottom: 0.25rem; border-bottom: 1px solid var(--dim); }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a href="/">Home</a>
+  <a href="/static/config.html">Config</a>
+  <a href="/static/viz.html">Viz</a>
+  <a href="/static/help.html" class="active">Help</a>
+</nav>
+
+<div class="content">
+<h1>Analysis Reference</h1>
+<p>Each feature extracted by the analyzer, its OSC output, and what it means for your light show.</p>
+
+<div class="section-label">Time-Domain Features</div>
+
+<div class="feature">
+  <h2>Amplitude <span class="osc">/audio/amplitude</span> <span class="rate">30 Hz</span></h2>
+  <p>Tracks the volume envelope of the audio signal. Amplitude.kr follows volume increases and decreases with configurable attack and release times.</p>
+  <p class="detail"><strong>Output:</strong> Single float, 0.0 (silence) to ~1.0 (full scale).</p>
+  <p class="detail"><strong>Use case:</strong> Drive overall brightness, scale effects, or trigger level-based thresholds.</p>
+  <p class="detail"><strong>Config:</strong> SC_AMP_ATTACK_TIME (snappiness), SC_AMP_RELEASE_TIME (decay speed).</p>
+</div>
+
+<div class="feature">
+  <h2>Pitch <span class="osc">/audio/pitch</span> <span class="rate">30 Hz</span></h2>
+  <p>Detects the fundamental frequency of the audio using SuperCollider's Pitch.kr algorithm. Returns both the detected frequency and a confidence score.</p>
+  <p class="detail"><strong>Output:</strong> Two floats — frequency in Hz (e.g. 440.0 for concert A) and hasFreq (0.0 = no pitch, 1.0 = confident).</p>
+  <p class="detail"><strong>Use case:</strong> Map pitch to color hue, or use confidence to distinguish pitched (melodic) vs unpitched (percussive) content.</p>
+  <p class="detail"><strong>Config:</strong> SC_PITCH_MIN_FREQ (default 50 Hz), SC_PITCH_MAX_FREQ (default 4000 Hz). Narrow for vocals (80-1000), widen for bass (30+).</p>
+</div>
+
+<div class="section-label">Spectral Features (FFT-based)</div>
+
+<div class="feature">
+  <h2>Loudness <span class="osc">/audio/loudness</span> <span class="rate">30 Hz</span></h2>
+  <p>Perceptual loudness in sones, using a psychoacoustic model. Unlike raw amplitude, this accounts for how humans actually hear — we're more sensitive to midrange frequencies.</p>
+  <p class="detail"><strong>Output:</strong> Single float, 0 (silence) to ~64+ (very loud).</p>
+  <p class="detail"><strong>Use case:</strong> More natural-feeling brightness control than raw amplitude. Better for music with wide dynamic range.</p>
+</div>
+
+<div class="feature">
+  <h2>Spectral Centroid <span class="osc">/audio/spectral/centroid</span> <span class="rate">30 Hz</span></h2>
+  <p>The "center of mass" of the frequency spectrum — a measure of perceived brightness or timbral warmth. High values mean bright/trebly sound, low values mean dark/bassy.</p>
+  <p class="detail"><strong>Output:</strong> Single float, frequency in Hz (typically 200–8000 for music).</p>
+  <p class="detail"><strong>Use case:</strong> Map to color temperature — low centroid = warm reds/oranges, high centroid = cool blues/whites.</p>
+</div>
+
+<div class="feature">
+  <h2>Spectral Flatness <span class="osc">/audio/spectral/flatness</span> <span class="rate">30 Hz</span></h2>
+  <p>Measures how noise-like vs tone-like the sound is. Pure tones (flute, sine wave) have low flatness. Noisy sounds (drums, static, crowd noise) have high flatness.</p>
+  <p class="detail"><strong>Output:</strong> Single float, 0.0 (pure tone) to 1.0 (white noise).</p>
+  <p class="detail"><strong>Use case:</strong> Distinguish rhythmic/percussive sections from melodic sections. Drive chaos/order visual parameters.</p>
+</div>
+
+<div class="feature">
+  <h2>Onset Detection <span class="osc">/audio/onset</span> <span class="rate">event</span></h2>
+  <p>Detects when a new note or drum hit starts — produces a single trigger pulse at each onset. Uses configurable detection algorithms optimized for different music styles.</p>
+  <p class="detail"><strong>Output:</strong> Trigger (sends 1 on each detected onset). Event-driven, not periodic.</p>
+  <p class="detail"><strong>Use case:</strong> Flash lights on hits, trigger strobes, sync visual events to musical attacks.</p>
+  <p class="detail"><strong>Config:</strong> SC_ONSET_THRESHOLD (0.0–1.0, lower = more sensitive), SC_ONSET_ALGORITHM (rcomplex, complex, phase, wphase, mkl, magsum, power).</p>
+  <div class="values">rcomplex = all-round | mkl = percussive | phase = pitched | power = simple energy</div>
+</div>
+
+<div class="section-label">Timbral & Harmonic Features</div>
+
+<div class="feature">
+  <h2>MFCC <span class="osc">/audio/mfcc</span> <span class="rate">10 Hz</span></h2>
+  <p>Mel-Frequency Cepstral Coefficients — a compact "fingerprint" of the sound's texture/timbre. Used in speech recognition and music classification. Each coefficient captures a different aspect of the spectral shape.</p>
+  <p class="detail"><strong>Output:</strong> Array of floats (default 13 coefficients). Coefficient 0 ≈ overall energy. Coefficients 1–5 = broad spectral shape. Higher = finer detail.</p>
+  <p class="detail"><strong>Use case:</strong> Feed into pattern matching for genre/mood detection. Visualize as a "timbre barcode" that changes character with the music.</p>
+  <p class="detail"><strong>Config:</strong> SC_MFCC_NUM_COEFF (default 13, reduce to 7 to save CPU, up to 42 for maximum detail).</p>
+</div>
+
+<div class="feature">
+  <h2>Key Detection <span class="osc">/audio/key</span> <span class="rate">2 Hz</span></h2>
+  <p>Estimates the musical key by analyzing pitch class distribution (chroma) and matching against key profiles. Returns a pitch class (C through B) and mode (major or minor).</p>
+  <p class="detail"><strong>Output:</strong> Two integers — key (0–11: C, C#, D, ... B) and mode (1 = major, 0 = minor).</p>
+  <p class="detail"><strong>Use case:</strong> Set color palette based on key (each key gets a signature color). Switch between warm (major) and cool (minor) palettes.</p>
+  <p class="detail"><strong>Config:</strong> SC_KEY_DECAY_TIME (default 2.0s). Higher = more stable, lower = faster key changes. Note: KeyTrack works best with FFT size 4096.</p>
+</div>
+
+<div class="feature">
+  <h2>Chromagram <span class="osc">/audio/chroma</span> <span class="rate">10 Hz</span></h2>
+  <p>Energy distribution across the 12 musical pitch classes (C, C#, D, ... B) regardless of octave. Shows "which notes are playing right now" — think of it as a real-time chord/harmony detector.</p>
+  <p class="detail"><strong>Output:</strong> Array of 12 floats — energy per pitch class, ordered C through B.</p>
+  <p class="detail"><strong>Use case:</strong> Map each note to a color on a 12-point wheel. Visualize chord progressions. Detect harmonic content for reactive lighting.</p>
+  <p class="detail"><strong>Note:</strong> Requires Chromagram UGen from SCMIRUGens (included in redFrik standalone, must be built separately for from-source installs).</p>
+</div>
+
+<div class="section-label">Rhythm Features</div>
+
+<div class="feature">
+  <h2>Beat Tracking <span class="osc">/audio/beat</span> + <span class="osc">/audio/bpm</span> <span class="rate">event</span></h2>
+  <p>BeatTrack2 detects beat positions and estimates tempo. Uses template-matching across straight and swung rhythmic patterns. The beat trigger fires on each detected beat; BPM is sent alongside.</p>
+  <p class="detail"><strong>Output:</strong> /audio/beat sends 1 on each beat (event-driven). /audio/bpm sends estimated tempo in BPM (float).</p>
+  <p class="detail"><strong>Use case:</strong> Sync strobes/pulses to the beat. Use BPM to set animation speeds. The core timing signal for any beat-reactive light show.</p>
+  <p class="detail"><strong>Config:</strong> SC_BEAT_LOCK — 0 = free (adapts quickly to tempo changes, good for live DJs), 1 = locked (holds steady tempo, good for produced tracks).</p>
+</div>
+
+<div class="section-label">Configuration</div>
+
+<div class="feature">
+  <h2>Trigger Rates</h2>
+  <p>Features are grouped by how often they send data:</p>
+  <p class="detail"><strong>Fast (default 30 Hz):</strong> amplitude, pitch, loudness, centroid, flatness — responsive features for real-time reactivity.</p>
+  <p class="detail"><strong>Medium (default 10 Hz):</strong> MFCC, chromagram — computationally heavier, lower rate is sufficient.</p>
+  <p class="detail"><strong>Slow (default 2 Hz):</strong> key detection — musical key changes slowly, high rate would be noisy.</p>
+  <p class="detail"><strong>Event-driven:</strong> onset, beat — fire only when detected, not on a timer.</p>
+  <p class="detail"><strong>Config:</strong> SC_TRIG_RATE_FAST, SC_TRIG_RATE_MEDIUM, SC_TRIG_RATE_SLOW. Lower rates save CPU and network bandwidth.</p>
+</div>
+
+<div class="feature">
+  <h2>Feature Toggles</h2>
+  <p>Each feature can be individually disabled to save CPU on the Raspberry Pi. Disabled features are completely excluded from the analysis — no UGen computation, no OSC messages sent.</p>
+  <p class="detail"><strong>Config:</strong> SC_FEATURE_AMPLITUDE, SC_FEATURE_PITCH, SC_FEATURE_LOUDNESS, SC_FEATURE_CENTROID, SC_FEATURE_FLATNESS, SC_FEATURE_ONSET, SC_FEATURE_MFCC, SC_FEATURE_KEY, SC_FEATURE_BEAT, SC_FEATURE_CHROMA (all default 1 = enabled, set to 0 to disable).</p>
+</div>
+
+</div>
+</body>
+</html>

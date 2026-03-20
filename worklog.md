@@ -51,3 +51,4 @@
 - [Task #14] ✅ (fixed: canvas resize moved to init+resize event, added reconnect timer guard, WS parse error logging)
 - [Task #15] Added dual-mode visualization. "Public View" toggle in nav hides expert dashboard and shows full-screen immersive Canvas: radial chromagram with glowing orbs, connecting lines to center, BPM/key display in center, amplitude ring pulse, fade trails. Tap/click to return to expert mode. "tap to exit" hint fades in periodically.
 - [Task #15] ✅ (fixed: re-size expert canvases when returning from public mode)
+- [Task #16] Created help.html — in-app analysis reference with detailed descriptions of each feature matching analyzer.scd comments. Covers: amplitude, pitch, loudness, centroid, flatness, onset (with algorithm descriptions), MFCC, key detection, chromagram, beat tracking. Also documents trigger rates and feature toggles. Added Help nav link to all pages.

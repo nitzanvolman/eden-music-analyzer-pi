@@ -68,8 +68,8 @@ fi
 
 # Install SuperCollider (includes sclang, scsynth, sc3-plugins)
 if command -v sclang &>/dev/null; then
-	echo "sclang already installed: $(which sclang)"
-	SCLANG_BIN="$(which sclang)"
+	echo "sclang already installed: $(command -v sclang)"
+	SCLANG_BIN="$(command -v sclang)"
 else
 	echo "Installing SuperCollider..."
 	brew install --cask supercollider

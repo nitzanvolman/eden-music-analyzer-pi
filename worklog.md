@@ -78,6 +78,8 @@
 - [Task #24d] ✅
 - [Task #24e] ✅
 - [Task #24] All sub-tasks complete — onset detection suite fully implemented across analyzer, config, OSC bridge, web UI, and docs.
+- [Task #25] ✅
+- [Task #26] Brightness card redesign: replaced Hz number + fill bar with sliding white marker on a dark-to-bright gradient track. Marker position represents spectral centroid with smooth CSS transition. Added descriptive label (dark/warm/neutral/bright/brilliant) based on centroid range.
 - [Task #25] Pitch card redesign: replaced raw Hz display with note name (large, e.g. "A4") + scrolling piano ribbon canvas. Ribbon shows 2-octave range auto-centered on median detected pitch, with piano key background (white/black keys), C-note labels, and color-coded dots that scroll left showing note history. Only records notes when pitch confidence > 0.5. Card is now wide. Hz shown as small secondary text.
 - [Task #24e] Updated README.md (config example, OSC output table with all 10 onset paths, analysis details section), CLAUDE.md (onset suite architecture section). All old SC_ONSET_THRESHOLD/SC_ONSET_ALGORITHM references replaced.
 - [Task #24d] Replaced single onset counter card with wide onset suite card containing 10 flash/pulse indicators (kick, snare, hihat, perc, bass, melody, bright, any, drop, soft). Color-coded by type: red=percussive, cyan=melodic, gold=general. Each lights up on trigger and fades out. Updated handleOSC to route all /audio/onset/* paths. Updated help page with full onset suite documentation. Updated config page with per-channel toggles and thresholds.

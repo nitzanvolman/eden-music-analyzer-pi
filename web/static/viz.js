@@ -12,6 +12,10 @@ function midiToOctave(midi) { return Math.floor(Math.round(midi) / 12) - 1; }
 const PITCH_HISTORY_LEN = 80;
 const pitchHistory = new Array(PITCH_HISTORY_LEN).fill(null);
 
+// Stable range for pitch ribbon (avoids jitter from median recalculation)
+let ribbonCenter = 60; // MIDI note center (C4 = 60)
+let ribbonCenterSmooth = 60; // smoothed version for rendering
+
 // Raw OSC values for modal display (address → args array)
 const oscRaw = {};
 
@@ -289,16 +293,19 @@ function drawPitchRibbon() {
   const h = canvas.clientHeight;
   ctx.clearRect(0, 0, w, h);
 
-  // Find range from history (default 2 octaves around middle C if no data)
-  const validNotes = pitchHistory.filter(n => n !== null);
-  let minMidi, maxMidi;
-  if (validNotes.length > 0) {
-    const median = validNotes.slice().sort((a,b) => a-b)[Math.floor(validNotes.length/2)];
-    minMidi = Math.floor(median - 12);  // 1 octave below
-    maxMidi = Math.ceil(median + 12);   // 1 octave above
-  } else {
-    minMidi = 48; maxMidi = 72; // C3 to C5
+  // Stable range: only re-center when the latest note is outside the window.
+  // This prevents jitter from median recalculation on every frame.
+  const latest = pitchHistory[pitchHistory.length - 1];
+  if (latest !== null) {
+    const margin = 10; // re-center when within 2 semitones of edge
+    if (latest > ribbonCenter + margin || latest < ribbonCenter - margin) {
+      ribbonCenter = Math.round(latest);
+    }
   }
+  // Smooth the center transition to avoid sudden jumps
+  ribbonCenterSmooth = ribbonCenterSmooth + (ribbonCenter - ribbonCenterSmooth) * 0.08;
+  const minMidi = ribbonCenterSmooth - 12;
+  const maxMidi = ribbonCenterSmooth + 12;
   const range = maxMidi - minMidi;
 
   // Draw piano key background

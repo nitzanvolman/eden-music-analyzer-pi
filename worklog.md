@@ -90,3 +90,4 @@
 - [Task #29] ✅
 - [Task #30] Split viz.html (1131 lines) into 3 files: viz.css (450 lines of styles), viz.js (540 lines of JS), viz.html (140 lines — slim HTML shell with link/script imports). No code changes, pure extraction.
 - [Task #30] ✅
+- [Task #31] Fixed pitch ribbon jitter. Root cause: median was recalculated from entire history buffer every frame, causing range to shift constantly. Fix: range only re-centers when the latest note is more than 10 semitones from center (near edge of visible window). Center transitions are smoothed with lerp (0.08 factor) to avoid sudden jumps. Range is now stable during normal playing.

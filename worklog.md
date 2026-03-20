@@ -36,3 +36,4 @@
 - [Task #11] Already completed as part of Task #8 (SC_TEST_MODE in config_template.env + analyzer.scd). Marked done.
 - [Task #12a] Created Python web server using aiohttp. Files: web/server.py (async server with routing, port from SC_WEB_PORT env var, default 8080), web/static/index.html (minimal landing page with ping check), web/__init__.py, requirements.txt (aiohttp). Added SC_WEB_PORT to config_template.env.
 - [Task #12a] ✅
+- [Task #12b] Added GET /api/health endpoint returning: uptime_seconds, load_avg (1/5/15 min), memory (total/available/free from /proc/meminfo), disk usage (total/used/free), and cpu_temp_c (Pi thermal zone, when available).

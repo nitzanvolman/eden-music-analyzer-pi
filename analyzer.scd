@@ -30,6 +30,7 @@ var cfgInputChan, cfgFFTSize, cfgAmpAttack, cfgAmpRelease;
 var cfgPitchMinFreq, cfgPitchMaxFreq, cfgOnsetThresh, cfgOnsetAlgo;
 var cfgMFCCCount, cfgKeyDecay, cfgBeatLock;
 var cfgTrigFast, cfgTrigMedium, cfgTrigSlow;
+var cfgTestMode;
 
 // ============================================================================
 // CONFIGURATION
@@ -76,10 +77,12 @@ cfgBeatLock    = ("SC_BEAT_LOCK".getenv ? "0").asInteger;
 cfgTrigFast    = ("SC_TRIG_RATE_FAST".getenv ? "30").asFloat;
 cfgTrigMedium  = ("SC_TRIG_RATE_MEDIUM".getenv ? "10").asFloat;
 cfgTrigSlow    = ("SC_TRIG_RATE_SLOW".getenv ? "2").asFloat;
+cfgTestMode    = ("SC_TEST_MODE".getenv ? "0") == "1";
 
 // --- Startup banner (printed to console / log) ---
 "==============================================".postln;
 "  SC-OSC Audio Analyzer".postln;
+if(cfgTestMode, { "  *** TEST MODE — synthetic data, no audio ***".postln });
 "==============================================".postln;
 ("  Date: " ++ Date.localtime.asString).postln;
 dests.do({ |d|
@@ -88,7 +91,110 @@ dests.do({ |d|
 "----------------------------------------------".postln;
 
 // ============================================================================
-// BOOT THE AUDIO SERVER
+// TEST MODE (or normal audio analysis)
+// ============================================================================
+// When SC_TEST_MODE=1, bypass the audio server entirely and send synthetic
+// OSC messages from sclang. Useful for testing receivers without audio hardware.
+
+if(cfgTestMode, {
+	// ======================================================================
+	// TEST MODE: synthetic OSC data
+	// ======================================================================
+	// Runs entirely in sclang — no scsynth needed. Sends plausible fake
+	// data on all OSC channels at the configured trigger rates.
+
+	var phase = 0.0;   // slowly rotating phase for smooth synthetic values
+	var beatPhase = 0.0;
+	var noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+	// --- Fast features (amplitude, pitch, loudness, centroid, flatness) ---
+	Routine({
+		var dt = 1.0 / cfgTrigFast;
+		loop {
+			var t = Main.elapsedTime;
+			var amp = (sin(t * 0.5) * 0.3 + 0.4).clip(0, 1);
+			var freq = (sin(t * 0.2) * 200 + 440).clip(cfgPitchMinFreq, cfgPitchMaxFreq);
+			var hasFreq = (sin(t * 0.3) * 0.3 + 0.7).clip(0, 1);
+			var loud = amp * 40;
+			var centroid = (sin(t * 0.15) * 2000 + 3000).clip(200, 8000);
+			var flatness = (sin(t * 0.4) * 0.3 + 0.3).clip(0, 1);
+
+			dests.do({ |d|
+				d.sendMsg('/audio/amplitude', amp);
+				d.sendMsg('/audio/pitch', freq, hasFreq);
+				d.sendMsg('/audio/loudness', loud);
+				d.sendMsg('/audio/spectral/centroid', centroid);
+				d.sendMsg('/audio/spectral/flatness', flatness);
+			});
+			dt.wait;
+		};
+	}).play;
+
+	// --- Medium features (MFCC, chroma) ---
+	Routine({
+		var dt = 1.0 / cfgTrigMedium;
+		loop {
+			var t = Main.elapsedTime;
+			var mfccArgs, chromaArgs;
+			// Synthetic MFCC: smoothly varying coefficients
+			mfccArgs = ['/audio/mfcc'] ++ cfgMFCCCount.collect({ |i|
+				(sin(t * (0.1 + (i * 0.05))) * 10).asFloat;
+			});
+			// Synthetic chroma: one dominant note rotating through pitch classes
+			chromaArgs = ['/audio/chroma'] ++ 12.collect({ |i|
+				var dominantNote = ((t * 0.5) % 12).asInteger;
+				if(i == dominantNote, { 0.8 + (0.2.rand) }, { 0.1.rand });
+			});
+			dests.do({ |d|
+				d.sendMsg(*mfccArgs);
+				d.sendMsg(*chromaArgs);
+			});
+			dt.wait;
+		};
+	}).play;
+
+	// --- Slow features (key) ---
+	Routine({
+		var dt = 1.0 / cfgTrigSlow;
+		loop {
+			var t = Main.elapsedTime;
+			var key = ((t * 0.1) % 12).asInteger;
+			var mode = if((t % 20) < 10, { 1 }, { 0 }); // alternate major/minor
+			dests.do({ |d| d.sendMsg('/audio/key', key, mode) });
+			("  [test] key: " ++ noteNames[key] ++ if(mode == 1, { " major" }, { " minor" })).postln;
+			dt.wait;
+		};
+	}).play;
+
+	// --- Beat (simulated ~120 BPM) ---
+	Routine({
+		var bpm = 120;
+		loop {
+			dests.do({ |d|
+				d.sendMsg('/audio/beat', 1);
+				d.sendMsg('/audio/bpm', bpm.asFloat);
+			});
+			// Slowly drift BPM between 100-140
+			bpm = (sin(Main.elapsedTime * 0.05) * 20 + 120).clip(60, 200);
+			(60.0 / bpm).wait;
+		};
+	}).play;
+
+	// --- Onset (simulated random hits) ---
+	Routine({
+		loop {
+			dests.do({ |d| d.sendMsg('/audio/onset', 1) });
+			(0.1 + 0.4.rand).wait; // random interval 0.1-0.5s
+		};
+	}).play;
+
+	"  Test mode running. Sending synthetic OSC data.".postln;
+	("  Sending to " ++ dests.size.asString ++ " destination(s)").postln;
+	"  Press Ctrl+C to stop.".postln;
+
+}, {
+// ============================================================================
+// NORMAL MODE: BOOT THE AUDIO SERVER
 // ============================================================================
 // s = the default server (scsynth). waitForBoot runs the function once
 // the audio server is ready. onFailure runs if booting fails.
@@ -463,4 +569,5 @@ s.waitForBoot({
 	("ERROR: Server failed to boot: " ++ error.asString).postln;
 	1.exit;
 });
+}); // end if(cfgTestMode)
 )

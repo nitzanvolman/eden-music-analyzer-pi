@@ -49,6 +49,17 @@ def get_latest() -> dict[str, dict]:
     return dict(_latest)
 
 
+def get_analyzer_status() -> dict:
+    """Return analyzer status based on heartbeat recency."""
+    hb = _latest.get("/audio/heartbeat")
+    if hb is None:
+        return {"status": "unknown", "detail": "No heartbeat received"}
+    age = round(time.time() - hb["t"], 1)
+    if age < 10:
+        return {"status": "alive", "last_heartbeat_age": age}
+    return {"status": "dead", "last_heartbeat_age": age, "detail": "Heartbeat stale"}
+
+
 def create_dispatcher() -> Dispatcher:
     """Create an OSC dispatcher that routes all /audio/* messages."""
     disp = Dispatcher()

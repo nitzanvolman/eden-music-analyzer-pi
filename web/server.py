@@ -16,7 +16,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from aiohttp import web
 
-from web.osc_bridge import start_osc_server, register_ws, unregister_ws, get_latest
+from web.osc_bridge import start_osc_server, register_ws, unregister_ws, get_latest, get_analyzer_status
 
 # Default port, overridable via env var
 WEB_PORT = int(os.environ.get("SC_WEB_PORT", "8080"))
@@ -123,6 +123,8 @@ async def api_health(request: web.Request) -> web.Response:
         "memory": mem,
         "disk": disk,
     }
+
+    data["analyzer"] = get_analyzer_status()
 
     cpu_temp = _read_cpu_temp()
     if cpu_temp is not None:

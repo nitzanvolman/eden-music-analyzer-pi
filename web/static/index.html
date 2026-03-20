@@ -32,6 +32,7 @@
     </div>
     <h1>SC-OSC Audio Analyzer</h1>
     <div class="status ok" id="status">Connecting...</div>
+    <div class="status" id="analyzerStatus" style="display:none"></div>
     <div class="grid" id="healthGrid" style="display:none"></div>
     <div class="status" id="throttleAlert" style="display:none"></div>
     <script>
@@ -52,6 +53,22 @@
                 const d = await resp.json();
                 document.getElementById('status').textContent = 'Server: ' + d.status;
                 document.getElementById('status').className = 'status ok';
+
+                // Analyzer status
+                const az = document.getElementById('analyzerStatus');
+                if (d.analyzer) {
+                    az.style.display = '';
+                    if (d.analyzer.status === 'alive') {
+                        az.className = 'status ok';
+                        az.textContent = 'Analyzer: alive (heartbeat ' + d.analyzer.last_heartbeat_age + 's ago)';
+                    } else if (d.analyzer.status === 'dead') {
+                        az.className = 'status critical';
+                        az.textContent = 'Analyzer: not responding (last heartbeat ' + d.analyzer.last_heartbeat_age + 's ago)';
+                    } else {
+                        az.className = 'status warning';
+                        az.textContent = 'Analyzer: ' + (d.analyzer.detail || 'unknown');
+                    }
+                }
 
                 const grid = document.getElementById('healthGrid');
                 grid.style.display = '';

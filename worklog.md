@@ -66,4 +66,4 @@
 - [Task #22] Added CPU temp monitoring + throttle alerts. Server: _read_throttle_status() parses vcgencmd get_throttled flags (under-voltage, freq capped, throttled, temp limit — both current and since-boot). /api/health now returns throttle object and temp_alert (warning at 70C, critical at 80C). Home page: dashboard with uptime, CPU temp (color-coded), load, memory %, disk %. Throttle alert banner shows active issues or past occurrences. Auto-refreshes every 10s.
 - [Task #22] ✅
 
-ALL 22 TASKS COMPLETE.
+- [Task #23] Added heartbeat OSC. Analyzer: sends `/audio/heartbeat` every 2s in both test and normal mode. OSC bridge: already routes via `/audio/*` wildcard; added `get_analyzer_status()` returning alive/dead/unknown based on heartbeat age (10s threshold). Server: `/api/health` now includes `analyzer` status. Home page: shows analyzer status banner (alive=green, dead=red, unknown=yellow).

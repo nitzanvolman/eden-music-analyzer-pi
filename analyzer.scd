@@ -207,6 +207,14 @@ if(cfgTestMode, {
 		}).play;
 	});
 
+	// --- Heartbeat (always active) ---
+	Routine({
+		loop {
+			dests.do({ |d| d.sendMsg('/audio/heartbeat', 1) });
+			2.wait;
+		};
+	}).play;
+
 	"  Test mode running. Sending synthetic OSC data.".postln;
 	("  Sending to " ++ dests.size.asString ++ " destination(s)").postln;
 	"  Press Ctrl+C to stop.".postln;
@@ -463,6 +471,14 @@ s.waitForBoot({
 			) });
 		}, '/tr_chroma');
 	});
+
+	// --- Heartbeat (always active) ---
+	Routine({
+		loop {
+			dests.do({ |d| d.sendMsg('/audio/heartbeat', 1) });
+			2.wait;
+		};
+	}).play;
 
 	"  All OSCdefs registered.".postln;
 	("  Sending OSC to " ++ dests.size.asString ++ " destination(s)").postln;

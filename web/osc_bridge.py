@@ -21,6 +21,14 @@ _ws_clients: set = set()
 _latest: dict[str, dict] = {}
 
 
+async def _safe_send(ws, data: str) -> None:
+    """Send to a WebSocket client, silently ignoring errors."""
+    try:
+        await ws.send_str(data)
+    except Exception:
+        pass
+
+
 def _handle_osc(address: str, *args) -> None:
     """Handle incoming OSC message — store latest and queue broadcast."""
     data = {
@@ -31,13 +39,9 @@ def _handle_osc(address: str, *args) -> None:
     _latest[address] = data
 
     # Schedule broadcast to all WebSocket clients
-    dead = set()
+    msg = json.dumps(data)
     for ws in _ws_clients:
-        try:
-            asyncio.ensure_future(ws.send_str(json.dumps(data)))
-        except Exception:
-            dead.add(ws)
-    _ws_clients -= dead
+        asyncio.ensure_future(_safe_send(ws, msg))
 
 
 def get_latest() -> dict[str, dict]:

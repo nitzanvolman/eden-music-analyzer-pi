@@ -287,7 +287,7 @@ async def ws_osc(request: web.Request) -> web.WebSocketResponse:
 
 async def on_startup(app: web.Application) -> None:
     """Start the OSC listener when the web server starts."""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     app["osc_transport"] = await start_osc_server(loop)
 
 

@@ -43,3 +43,5 @@
 - [Task #12d] Added config read/write API. GET /api/config returns current values + template defaults. POST /api/config accepts JSON body to update values (validates SC_ prefix). Write preserves file structure/comments from template. Keys are validated to prevent arbitrary env pollution.
 - [Task #12d] ✅ (added newline injection validation for config values)
 - [Task #12e] Added live OSC-to-WebSocket bridge. web/osc_bridge.py: async OSC UDP listener (python-osc) on SC_OSC_BRIDGE_PORT (default 9000), stores latest values per address, broadcasts JSON to all connected WebSocket clients. server.py: WS endpoint at /ws/osc (sends snapshot on connect then streams), GET /api/osc/latest for polling, lifecycle hooks for OSC server start/cleanup. Added python-osc to requirements.txt and SC_OSC_BRIDGE_PORT to config_template.env.
+- [Task #12e] ✅ (wrapped WS sends in _safe_send to avoid noisy log warnings, used get_running_loop instead of deprecated get_event_loop)
+- [Task #12] All subtasks (12a-12e) complete. Web server setup done.

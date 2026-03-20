@@ -62,3 +62,4 @@
 - [Task #20] Added logging with rotation. autostart.sh: logs to ~/sc-osc/logs/analyzer.log, rotates on startup if >5MB (keeps 3 backups). Web server: Python RotatingFileHandler to ~/sc-osc/logs/web.log (5MB, 3 backups). Added GET /api/logs endpoint for reading recent log lines (supports analyzer and web logs). Added logs/ to .gitignore.
 - [Task #20] ✅ (added integer validation for lines query param)
 - [Task #21] Created logs.html — log viewer page. Source selector (analyzer/web), line count selector (50-500), auto-refresh (5s toggle), color-coded lines (error=red, warn=gold, info=default). Smart auto-scroll (stays at bottom if user was already there). Status bar shows file info and update time. XSS-safe HTML escaping. Added Logs nav link to all pages.
+- [Task #21] ✅ (fixed XSS in error message display via shared esc() helper)

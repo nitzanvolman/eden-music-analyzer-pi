@@ -66,6 +66,10 @@ body { font-family: 'JetBrains Mono', monospace; background: var(--bg); color: v
 <script>
 let refreshTimer = null;
 
+function esc(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function classifyLine(line) {
   const lower = line.toLowerCase();
   if (lower.includes('error') || lower.includes('fail') || lower.includes('exception')) return 'error';
@@ -83,7 +87,7 @@ async function loadLogs() {
     const data = await resp.json();
 
     if (data.status === 'error') {
-      container.innerHTML = `<div class="log-line error">${data.message}</div>`;
+      container.innerHTML = `<div class="log-line error">${esc(data.message)}</div>`;
       return;
     }
 
@@ -91,8 +95,7 @@ async function loadLogs() {
 
     container.innerHTML = data.lines.map(line => {
       const cls = classifyLine(line);
-      const escaped = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      return `<div class="log-line ${cls}">${escaped}</div>`;
+      return `<div class="log-line ${cls}">${esc(line)}</div>`;
     }).join('');
 
     document.getElementById('statusText').textContent =
@@ -105,7 +108,7 @@ async function loadLogs() {
       container.scrollTop = container.scrollHeight;
     }
   } catch (e) {
-    container.innerHTML = `<div class="log-line error">Failed to load: ${e.message}</div>`;
+    container.innerHTML = `<div class="log-line error">Failed to load: ${esc(e.message)}</div>`;
   }
 }
 

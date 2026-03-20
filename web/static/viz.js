@@ -350,26 +350,21 @@ function drawPitchRibbon() {
     }
   }
 
-  // Draw pitch history as dots scrolling left
+  // Draw pitch history as small bars with fading opacity
   const colW = w / PITCH_HISTORY_LEN;
+  const barH = h / range * 0.6; // constant height, ~60% of one semitone
+  const barW = Math.max(colW - 1, 2); // small gap between bars
   for (let i = 0; i < pitchHistory.length; i++) {
     const midi = pitchHistory[i];
     if (midi === null) continue;
 
-    const x = i * colW + colW / 2;
-    const y = h - ((midi - minMidi) / range) * h;
-    const age = (i / pitchHistory.length); // 0=oldest, 1=newest
-    const r = 3 + age * 3;
+    const x = i * colW;
+    const y = h - ((midi - minMidi) / range) * h - barH / 2;
+    const age = i / pitchHistory.length; // 0=oldest, 1=newest
 
-    // Note dot with glow
-    const hue = (Math.round(midi) % 12) / 12 * 300;
-    ctx.fillStyle = `hsla(${hue}, 80%, 60%, ${0.2 + age * 0.8})`;
-    ctx.shadowColor = `hsla(${hue}, 90%, 55%, ${age * 0.6})`;
-    ctx.shadowBlur = age * 8;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
+    const hue = (midi % 12) / 12 * 300;
+    ctx.fillStyle = `hsla(${hue}, 80%, 60%, ${0.15 + age * 0.85})`;
+    ctx.fillRect(x, y, barW, barH);
   }
 }
 

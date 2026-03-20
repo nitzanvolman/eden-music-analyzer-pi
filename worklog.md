@@ -67,3 +67,4 @@
 - [Task #22] ✅
 
 - [Task #23] Added heartbeat OSC. Analyzer: sends `/audio/heartbeat` every 2s in both test and normal mode. OSC bridge: already routes via `/audio/*` wildcard; added `get_analyzer_status()` returning alive/dead/unknown based on heartbeat age (10s threshold). Server: `/api/health` now includes `analyzer` status. Home page: shows analyzer status banner (alive=green, dead=red, unknown=yellow).
+- [Task #23] ✅

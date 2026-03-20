@@ -97,7 +97,7 @@ installed), how to tune, and Output Reference (what the reciever of the OSC mess
 20. [🟢] - Logging with rotation — persistent logs with size caps (don't fill the SD card). Must capture sclang stdout/stderr.
 21. [🟢] - Web interface: log viewer screen — view logs in real-time from the web UI.
 22. [🟢] - CPU temperature monitoring + throttle alerts — expose Pi temp via web UI, warn when overheating.
-23. [🔵] - Analyzer heartbeat OSC — analyzer sends a periodic heartbeat OSC message; web home page reports analyzer status (alive/dead) based on heartbeat presence.
+23. [🟢] - Analyzer heartbeat OSC — analyzer sends a periodic heartbeat OSC message; web home page reports analyzer status (alive/dead) based on heartbeat presence.
 
 
 

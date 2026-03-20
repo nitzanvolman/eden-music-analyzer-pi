@@ -82,6 +82,8 @@
 - [Task #26] ✅
 - [Task #27] ✅
 - [Task #28] ✅
+- [Task #29] ✅
+- [Task #30] Split viz.html (1131 lines) into 3 files: viz.css (450 lines of styles), viz.js (540 lines of JS), viz.html (140 lines — slim HTML shell with link/script imports). No code changes, pure extraction.
 - [Task #29] OSC detail modal: click any card to open a modal showing the specific OSC addresses and their live values. Cards have data-osc attributes listing their OSC paths. Modal updates continuous values at 15fps and flashes trigger values (beat, onsets) in real-time as they arrive. Closes on overlay click or Escape key. Styled to match dashboard aesthetic.
 - [Task #28] Organized viz UI into 3 labeled sections: "Rhythm & Timing" (Tempo + Onsets), "Pitch & Harmony" (Key + Pitch + Chromagram), "Dynamics & Timbre" (Amplitude + Loudness + Brightness + Noisiness). Added section-group CSS with label + horizontal rule divider.
 - [Task #27] Removed MFCC Timbre card from viz UI: removed HTML card, drawMFCC function, mfcc state array, mfcc handleOSC case, and mfccCanvas from sizeCanvases. MFCC data still flows via OSC/WebSocket — just no UI card.

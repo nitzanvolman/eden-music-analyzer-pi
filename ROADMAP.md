@@ -122,7 +122,7 @@ installed), how to tune, and Output Reference (what the reciever of the OSC mess
 26. [🟢] - Brightness card redesign — replace the raw Hz number with a sliding marker on a dark-to-bright gradient bar. The marker position represents the spectral centroid value. No number needed — the position on the gradient is the information. Apply exponential smoothing so the marker glides instead of jumping. Keep the existing color-temperature aesthetic of the bar.
 27. [🟢] - Remove MFCC Timbre card from the visualization UI.
 28. [🟢] - Organize the visualization UI into meaningful groupings: (Tempo + Onsets), (Key + Pitch + Chromagram), (Loudness + Spectral Centroid + Noisiness).
-29. [🔵] - When i click on any of the cards in the visualization UI, I would like to open a modal popup showing the all of the specific OSC commands being send and their values in real time, so it's easy for me to program the OSC reciever.
-30. [⚪] - Modularize viz.html — split the monolithic file into separate CSS, JS, and HTML files for easier maintenance. Extract styles into a stylesheet, JS into modules (state, websocket, renderers, modal, public view), and keep viz.html as a slim shell that imports them.
+29. [🟢] - When i click on any of the cards in the visualization UI, I would like to open a modal popup showing the all of the specific OSC commands being send and their values in real time, so it's easy for me to program the OSC reciever.
+30. [🔵] - Modularize viz.html — split the monolithic file into separate CSS, JS, and HTML files for easier maintenance. Extract styles into a stylesheet, JS into modules (state, websocket, renderers, modal, public view), and keep viz.html as a slim shell that imports them.
 
 

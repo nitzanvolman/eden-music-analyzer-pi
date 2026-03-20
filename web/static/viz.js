@@ -307,13 +307,15 @@ function drawPitchRibbon() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
 
-  // Stable integer range: only re-center when latest note is near the edge.
-  // Using integers prevents sub-pixel drift that causes visual jitter.
-  const latest = pitchHistory[pitchHistory.length - 1];
-  if (latest !== null) {
-    const margin = 10;
-    if (latest > ribbonCenter + margin || latest < ribbonCenter - margin) {
-      ribbonCenter = Math.round(latest);
+  // Stable integer range: only re-center when most recent notes are outside
+  // the visible window. Single outliers (noise spikes) are ignored.
+  const recentNotes = pitchHistory.slice(-10).filter(n => n !== null);
+  if (recentNotes.length >= 3) {
+    const outsideCount = recentNotes.filter(n => n < ribbonCenter - 11 || n > ribbonCenter + 11).length;
+    if (outsideCount > recentNotes.length / 2) {
+      // Majority of recent notes are outside — re-center to their median
+      const sorted = recentNotes.slice().sort((a, b) => a - b);
+      ribbonCenter = sorted[Math.floor(sorted.length / 2)];
     }
   }
   const minMidi = ribbonCenter - 12;

@@ -88,5 +88,5 @@
 - [Task #28] ✅
 - [Task #29] OSC detail modal: click any card to open a modal showing the specific OSC addresses and their live values. Cards have data-osc attributes listing their OSC paths. Modal updates continuous values at 15fps and flashes trigger values (beat, onsets) in real-time as they arrive. Closes on overlay click or Escape key. Styled to match dashboard aesthetic.
 - [Task #29] ✅
-- [Task #30] ✅
 - [Task #30] Split viz.html (1131 lines) into 3 files: viz.css (450 lines of styles), viz.js (540 lines of JS), viz.html (140 lines — slim HTML shell with link/script imports). No code changes, pure extraction.
+- [Task #30] ✅

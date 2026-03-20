@@ -52,11 +52,11 @@ That said — this is a hobby project, not life-or-death infrastructure. Favor p
 
 #### 4. Report
 
-1) append an entry to worklog.md summarizing your work, so the next session would know the progress.
+1) **Append** an entry to the **end** of worklog.md summarizing your work. Never insert entries in the middle — always add at the bottom so the log reflects chronological order.
   Format:
   - If 🟠 or ⚪:
     `- [Task #{taskid}] {what was done}`
-  - If 🔵:  
+  - If 🔵:
     `- [Task #{taskid}] ✅`
     or
     `- [Task #{taskid}] ❌ - {issues description}`

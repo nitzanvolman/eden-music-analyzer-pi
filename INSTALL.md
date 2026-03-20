@@ -1,5 +1,7 @@
 # Installation
 
+**Other platforms:** [macOS](./install.sh) (`./install.sh --mac`) | [Windows](./INSTALL_WINDOWS.md)
+
 ## Prerequisites
 
 - Raspberry Pi 4 or 5, 64-bit Raspberry Pi OS (Bookworm or later)

@@ -57,3 +57,4 @@
 - [Task #17] ✅
 - [Task #18] Added --mac flag to install.sh. On macOS: installs SuperCollider via Homebrew cask, installs liblo for oscdump, checks for Python 3. Skips JACK config, real-time permissions, CPU governor, and systemd (Pi-only). Mac-specific "Next steps" output. Bash syntax validated.
 - [Task #18] ✅ (replaced `which` with `command -v` for portability)
+- [Task #19] Created INSTALL_WINDOWS.md — best-effort Windows guide based on web research. Covers: SuperCollider install (Chocolatey or official installer), sc3-plugins, Python 3.12+, project setup via PowerShell, config.env sourcing workaround, audio setup (WASAPI/ASIO), known limitations, troubleshooting. Updated INSTALL.md with platform links.

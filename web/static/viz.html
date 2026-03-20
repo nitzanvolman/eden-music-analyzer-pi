@@ -361,6 +361,7 @@ let ws = null;
 let reconnectTimer = null;
 
 function connect() {
+  clearTimeout(reconnectTimer);
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(`${proto}//${location.host}/ws/osc`);
 
@@ -381,7 +382,7 @@ function connect() {
     try {
       const msg = JSON.parse(evt.data);
       handleOSC(msg.address, msg.args);
-    } catch(e) {}
+    } catch(e) { console.warn('WS parse error:', e); }
   };
 }
 
@@ -503,15 +504,26 @@ function updateDOM() {
 // ============================================================
 // CANVAS RENDERERS
 // ============================================================
-function drawChroma() {
-  const canvas = document.getElementById('chromaCanvas');
-  const ctx = canvas.getContext('2d');
+// Cache canvas contexts and size them once (+ on resize)
+const canvases = {};
+
+function sizeCanvases() {
   const dpr = window.devicePixelRatio || 1;
+  ['chromaCanvas', 'mfccCanvas'].forEach(id => {
+    const canvas = document.getElementById(id);
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.clientWidth * dpr;
+    canvas.height = canvas.clientHeight * dpr;
+    canvases[id] = { canvas, ctx, dpr };
+  });
+}
+window.addEventListener('resize', sizeCanvases);
 
-  canvas.width = canvas.clientWidth * dpr;
-  canvas.height = canvas.clientHeight * dpr;
-  ctx.scale(dpr, dpr);
+function drawChroma() {
+  const { canvas, ctx, dpr } = canvases.chromaCanvas || {};
+  if (!ctx) return;
 
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const w = canvas.clientWidth;
   const h = canvas.clientHeight;
   const barW = (w - 11 * 3) / 12; // 3px gap
@@ -551,14 +563,10 @@ function drawChroma() {
 }
 
 function drawMFCC() {
-  const canvas = document.getElementById('mfccCanvas');
-  const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
+  const { canvas, ctx, dpr } = canvases.mfccCanvas || {};
+  if (!ctx) return;
 
-  canvas.width = canvas.clientWidth * dpr;
-  canvas.height = canvas.clientHeight * dpr;
-  ctx.scale(dpr, dpr);
-
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const w = canvas.clientWidth;
   const h = canvas.clientHeight;
   const n = state.mfcc.length;
@@ -612,6 +620,7 @@ function frame() {
   requestAnimationFrame(frame);
 }
 
+sizeCanvases();
 connect();
 requestAnimationFrame(frame);
 </script>

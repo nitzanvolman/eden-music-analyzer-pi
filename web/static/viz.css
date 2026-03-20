@@ -343,6 +343,10 @@ canvas {
   min-height: 0;
   height: 100%;
 }
+.chroma-card {
+  display: flex;
+  flex-direction: column;
+}
 .pitch-card {
   position: relative;
   padding: 0;

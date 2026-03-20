@@ -289,15 +289,15 @@ function sizeCanvases() {
     canvases.pitchRibbon = { canvas: pitchCanvas, ctx: pitchCanvas.getContext('2d'), dpr, w: pw, h: ph };
   }
 
-  // Other canvases: sized from their own layout dimensions
-  ['chromaCanvas'].forEach(id => {
-    const canvas = document.getElementById(id);
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    canvas.width = canvas.clientWidth * dpr;
-    canvas.height = canvas.clientHeight * dpr;
-    canvases[id] = { canvas, ctx, dpr };
-  });
+  // Chroma canvas: sized from its rendered bounding rect
+  const chromaCanvas = document.getElementById('chromaCanvas');
+  if (chromaCanvas) {
+    const rect = chromaCanvas.getBoundingClientRect();
+    const ctx = chromaCanvas.getContext('2d');
+    chromaCanvas.width = rect.width * dpr;
+    chromaCanvas.height = rect.height * dpr;
+    canvases.chromaCanvas = { canvas: chromaCanvas, ctx, dpr };
+  }
 }
 window.addEventListener('resize', sizeCanvases);
 

@@ -64,6 +64,9 @@ def create_dispatcher() -> Dispatcher:
     """Create an OSC dispatcher that routes all /audio/* messages."""
     disp = Dispatcher()
     disp.map("/audio/*", _handle_osc)
+    # Nested paths (e.g. /audio/onset/kick, /audio/spectral/centroid)
+    # need their own pattern — OSC * only matches one path level.
+    disp.map("/audio/*/*", _handle_osc)
     return disp
 
 

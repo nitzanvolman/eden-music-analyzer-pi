@@ -75,9 +75,9 @@ function handleOSC(addr, args) {
     case '/audio/pitch':
       state.pitch = args[0];
       state.hasFreq = args[1];
-      // Record to history if confident
+      // Record to history if confident (round to nearest semitone to prevent jitter)
       if (args[1] > 0.5 && args[0] > 20) {
-        pitchHistory.push(hzToMidi(args[0]));
+        pitchHistory.push(Math.round(hzToMidi(args[0])));
       } else {
         pitchHistory.push(null);
       }
@@ -273,14 +273,28 @@ const canvases = {};
 
 function sizeCanvases() {
   const dpr = window.devicePixelRatio || 1;
-  ['pitchRibbon', 'chromaCanvas'].forEach(id => {
+
+  // Pitch ribbon: sized to fill its parent card
+  const pitchCanvas = document.getElementById('pitchRibbon');
+  if (pitchCanvas) {
+    const parent = pitchCanvas.parentElement;
+    const pw = parent.offsetWidth;
+    const ph = parent.offsetHeight;
+    pitchCanvas.width = pw * dpr;
+    pitchCanvas.height = ph * dpr;
+    pitchCanvas.style.width = pw + 'px';
+    pitchCanvas.style.height = ph + 'px';
+    canvases.pitchRibbon = { canvas: pitchCanvas, ctx: pitchCanvas.getContext('2d'), dpr, w: pw, h: ph };
+  }
+
+  // Other canvases: sized from their own layout dimensions
+  ['chromaCanvas'].forEach(id => {
     const canvas = document.getElementById(id);
     if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
     const ctx = canvas.getContext('2d');
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    canvases[id] = { canvas, ctx, dpr, w: rect.width, h: rect.height };
+    canvas.width = canvas.clientWidth * dpr;
+    canvas.height = canvas.clientHeight * dpr;
+    canvases[id] = { canvas, ctx, dpr };
   });
 }
 window.addEventListener('resize', sizeCanvases);

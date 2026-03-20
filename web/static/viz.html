@@ -376,6 +376,85 @@ canvas {
   height: 1px;
   background: linear-gradient(90deg, var(--dim), transparent);
 }
+
+/* === OSC DETAIL MODAL === */
+.card[data-osc] { cursor: pointer; }
+
+.osc-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 200;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(4px);
+}
+.osc-modal-overlay.open { display: flex; }
+
+.osc-modal {
+  background: var(--surface);
+  border: 1px solid var(--dim);
+  border-radius: var(--radius);
+  width: min(90vw, 520px);
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.osc-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--dim);
+}
+.osc-modal-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+.osc-modal-close {
+  font-size: 1.5rem;
+  color: var(--text-dim);
+  cursor: pointer;
+  line-height: 1;
+}
+.osc-modal-close:hover { color: var(--accent); }
+
+.osc-modal-body { padding: 0.5rem 1rem 1rem; }
+
+.osc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(42,42,74,0.4);
+  gap: 1rem;
+}
+.osc-row:last-child { border-bottom: none; }
+
+.osc-addr {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--cyan);
+  white-space: nowrap;
+}
+.osc-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: #fff;
+  text-align: right;
+  min-width: 80px;
+}
+.osc-val.trigger {
+  transition: color 0.3s ease-out;
+}
+.osc-val.trigger.flash {
+  color: var(--gold);
+  transition: color 0s;
+}
 </style>
 </head>
 <body>
@@ -405,14 +484,14 @@ canvas {
   <div class="section-group"><span class="section-group-label">Rhythm &amp; Timing</span><span class="section-group-line"></span></div>
 
   <!-- BPM + Beat -->
-  <div class="card beat-card" id="beatCard">
+  <div class="card beat-card" id="beatCard" data-osc="/audio/beat,/audio/bpm">
     <div class="card-label">Tempo</div>
     <div class="card-value" id="bpmVal">---</div>
     <div class="card-sub">BPM</div>
   </div>
 
   <!-- Onset Suite -->
-  <div class="card wide">
+  <div class="card wide" data-osc="/audio/onset/kick,/audio/onset/snare,/audio/onset/hihat,/audio/onset/perc,/audio/onset/bass,/audio/onset/melody,/audio/onset/bright,/audio/onset/any,/audio/onset/drop,/audio/onset/soft">
     <div class="card-label">Onsets</div>
     <div class="onset-grid">
       <div class="onset-pip perc-type" id="onset-kick"><div class="onset-dot"></div><div class="onset-label">Kick</div></div>
@@ -432,7 +511,7 @@ canvas {
   <div class="section-group"><span class="section-group-label">Pitch &amp; Harmony</span><span class="section-group-line"></span></div>
 
   <!-- Key -->
-  <div class="card">
+  <div class="card" data-osc="/audio/key">
     <div class="card-label">Key</div>
     <div class="key-display">
       <span class="key-note" id="keyNote">--</span>
@@ -441,7 +520,7 @@ canvas {
   </div>
 
   <!-- Pitch -->
-  <div class="card wide">
+  <div class="card wide" data-osc="/audio/pitch">
     <div class="card-label">Pitch</div>
     <div class="pitch-header">
       <span class="pitch-note" id="pitchNote">--</span>
@@ -452,7 +531,7 @@ canvas {
   </div>
 
   <!-- Chromagram -->
-  <div class="card wide">
+  <div class="card wide" data-osc="/audio/chroma">
     <div class="card-label">Chromagram</div>
     <canvas id="chromaCanvas" height="100"></canvas>
   </div>
@@ -461,14 +540,14 @@ canvas {
   <div class="section-group"><span class="section-group-label">Dynamics &amp; Timbre</span><span class="section-group-line"></span></div>
 
   <!-- Amplitude -->
-  <div class="card">
+  <div class="card" data-osc="/audio/amplitude">
     <div class="card-label">Amplitude</div>
     <div class="card-value" id="ampVal">0.00</div>
     <div class="meter"><div class="meter-fill amp" id="ampBar" style="width:0%"></div></div>
   </div>
 
   <!-- Loudness -->
-  <div class="card">
+  <div class="card" data-osc="/audio/loudness">
     <div class="card-label">Loudness</div>
     <div class="card-value" id="loudVal">0.0</div>
     <div class="card-sub">sones</div>
@@ -476,7 +555,7 @@ canvas {
   </div>
 
   <!-- Spectral Centroid (brightness) -->
-  <div class="card">
+  <div class="card" data-osc="/audio/spectral/centroid">
     <div class="card-label">Brightness</div>
     <div class="bright-label" id="brightLabel">---</div>
     <div class="bright-track">
@@ -485,12 +564,23 @@ canvas {
   </div>
 
   <!-- Spectral Flatness (noisiness) -->
-  <div class="card">
+  <div class="card" data-osc="/audio/spectral/flatness">
     <div class="card-label">Noisiness</div>
     <div class="card-value" id="flatVal">0.00</div>
     <div class="meter"><div class="meter-fill noise" id="flatBar" style="width:0%"></div></div>
   </div>
 
+</div>
+
+<!-- OSC Detail Modal -->
+<div class="osc-modal-overlay" id="oscModal" onclick="closeOscModal(event)">
+  <div class="osc-modal" onclick="event.stopPropagation()">
+    <div class="osc-modal-header">
+      <span class="osc-modal-title" id="oscModalTitle">OSC Commands</span>
+      <span class="osc-modal-close" onclick="closeOscModal()">&times;</span>
+    </div>
+    <div class="osc-modal-body" id="oscModalBody"></div>
+  </div>
 </div>
 
 <script>
@@ -507,6 +597,9 @@ function midiToOctave(midi) { return Math.floor(Math.round(midi) / 12) - 1; }
 // Pitch history ring buffer (stores MIDI note numbers, null = no pitch)
 const PITCH_HISTORY_LEN = 80;
 const pitchHistory = new Array(PITCH_HISTORY_LEN).fill(null);
+
+// Raw OSC values for modal display (address → args array)
+const oscRaw = {};
 
 const state = {
   amp: 0, pitch: 0, hasFreq: 0, loud: 0,
@@ -552,6 +645,12 @@ function connect() {
 }
 
 function handleOSC(addr, args) {
+  oscRaw[addr] = args;
+  // Flash trigger value in modal if open
+  if (TRIGGER_ADDRS.has(addr)) {
+    const el = document.getElementById('osc-val-' + addr.replace(/\//g, '_'));
+    if (el) { el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 200); }
+  }
   switch(addr) {
     case '/audio/amplitude':
       state.amp = args[0];
@@ -623,6 +722,72 @@ function flashOnsetPip(channel) {
   clearTimeout(onsetTimeouts[channel]);
   onsetTimeouts[channel] = setTimeout(() => el.classList.remove('lit'), 200);
 }
+
+// ============================================================
+// OSC DETAIL MODAL
+// ============================================================
+let modalAddresses = [];
+let modalUpdateInterval = null;
+
+// Trigger addresses flash briefly in the modal
+const TRIGGER_ADDRS = new Set([
+  '/audio/beat', '/audio/onset/kick', '/audio/onset/snare', '/audio/onset/hihat',
+  '/audio/onset/perc', '/audio/onset/bass', '/audio/onset/melody', '/audio/onset/bright',
+  '/audio/onset/any', '/audio/onset/drop', '/audio/onset/soft'
+]);
+
+function openOscModal(title, addresses) {
+  modalAddresses = addresses;
+  document.getElementById('oscModalTitle').textContent = title + ' — OSC';
+  const body = document.getElementById('oscModalBody');
+  body.innerHTML = addresses.map(addr => {
+    const isTrigger = TRIGGER_ADDRS.has(addr);
+    return `<div class="osc-row">
+      <span class="osc-addr">${addr}</span>
+      <span class="osc-val${isTrigger ? ' trigger' : ''}" id="osc-val-${addr.replace(/\//g, '_')}">${isTrigger ? 'trigger' : '---'}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('oscModal').classList.add('open');
+
+  // Update values at 15fps
+  clearInterval(modalUpdateInterval);
+  modalUpdateInterval = setInterval(updateModalValues, 66);
+}
+
+function closeOscModal(event) {
+  if (event && event.target !== event.currentTarget) return;
+  document.getElementById('oscModal').classList.remove('open');
+  clearInterval(modalUpdateInterval);
+  modalAddresses = [];
+}
+
+function updateModalValues() {
+  for (const addr of modalAddresses) {
+    if (TRIGGER_ADDRS.has(addr)) continue; // triggers flash via handleOSC
+    const el = document.getElementById('osc-val-' + addr.replace(/\//g, '_'));
+    if (!el) continue;
+    const args = oscRaw[addr];
+    if (args) {
+      el.textContent = args.map(v => typeof v === 'number' ? v.toFixed(2) : v).join(', ');
+    }
+  }
+}
+
+// Attach click handlers to all cards with data-osc
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.card[data-osc]').forEach(card => {
+    card.addEventListener('click', () => {
+      const label = card.querySelector('.card-label')?.textContent || 'OSC';
+      const addrs = card.dataset.osc.split(',');
+      openOscModal(label, addrs);
+    });
+  });
+});
+
+// Close on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeOscModal();
+});
 
 // ============================================================
 // RENDER LOOP

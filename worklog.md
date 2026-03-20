@@ -82,6 +82,7 @@
 - [Task #26] ✅
 - [Task #27] ✅
 - [Task #28] ✅
+- [Task #29] OSC detail modal: click any card to open a modal showing the specific OSC addresses and their live values. Cards have data-osc attributes listing their OSC paths. Modal updates continuous values at 15fps and flashes trigger values (beat, onsets) in real-time as they arrive. Closes on overlay click or Escape key. Styled to match dashboard aesthetic.
 - [Task #28] Organized viz UI into 3 labeled sections: "Rhythm & Timing" (Tempo + Onsets), "Pitch & Harmony" (Key + Pitch + Chromagram), "Dynamics & Timbre" (Amplitude + Loudness + Brightness + Noisiness). Added section-group CSS with label + horizontal rule divider.
 - [Task #27] Removed MFCC Timbre card from viz UI: removed HTML card, drawMFCC function, mfcc state array, mfcc handleOSC case, and mfccCanvas from sizeCanvases. MFCC data still flows via OSC/WebSocket — just no UI card.
 - [Task #26] Brightness card redesign: replaced Hz number + fill bar with sliding white marker on a dark-to-bright gradient track. Marker position represents spectral centroid with smooth CSS transition. Added descriptive label (dark/warm/neutral/bright/brilliant) based on centroid range.

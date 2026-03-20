@@ -55,3 +55,4 @@
 - [Task #16] ✅
 - [Task #17] Enhanced README: added "Analysis Details" section with descriptions of all 10 features (matching analyzer.scd comment depth), updated "Disable features" to use config-driven SC_FEATURE_* toggles, added "Web Interface" section with startup instructions and page descriptions, updated OSC output table with ranges and configurable MFCC count.
 - [Task #17] ✅
+- [Task #18] Added --mac flag to install.sh. On macOS: installs SuperCollider via Homebrew cask, installs liblo for oscdump, checks for Python 3. Skips JACK config, real-time permissions, CPU governor, and systemd (Pi-only). Mac-specific "Next steps" output. Bash syntax validated.

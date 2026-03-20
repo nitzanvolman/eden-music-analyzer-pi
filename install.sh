@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# install.sh — Set up SuperCollider audio analyzer on Raspberry Pi
-# Supports two install modes:
-#   ./install.sh              — uses redFrik pre-built standalone (fast, 5 min)
-#   ./install.sh --from-source — builds SC + sc3-plugins from source (safe, 60-90 min)
-#   ./install.sh --systemd    — also sets up a systemd service for autostart
+# install.sh — Set up SuperCollider audio analyzer
+# Supports multiple install modes:
+#   ./install.sh              — Raspberry Pi, redFrik pre-built standalone (fast, 5 min)
+#   ./install.sh --from-source — Raspberry Pi, builds SC from source (safe, 60-90 min)
+#   ./install.sh --mac         — macOS, installs via Homebrew
+#   ./install.sh --systemd    — also sets up a systemd service for autostart (Pi only)
 # Flags can be combined: ./install.sh --from-source --systemd
 #
 # Idempotent: safe to run multiple times.
@@ -13,6 +14,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SC_OSC_DIR="$HOME/sc-osc"
 SETUP_SYSTEMD=false
 FROM_SOURCE=false
+MAC_MODE=false
 
 # Where SC ends up
 SC_INSTALL_DIR=""  # set below based on mode
@@ -23,29 +25,79 @@ for arg in "$@"; do
 	case "$arg" in
 		--systemd) SETUP_SYSTEMD=true ;;
 		--from-source) FROM_SOURCE=true ;;
-		*) echo "Unknown flag: $arg"; echo "Usage: $0 [--from-source] [--systemd]"; exit 1 ;;
+		--mac) MAC_MODE=true ;;
+		*) echo "Unknown flag: $arg"; echo "Usage: $0 [--from-source] [--mac] [--systemd]"; exit 1 ;;
 	esac
 done
 
-# --- Architecture check ---
+# --- Platform check ---
 ARCH="$(uname -m)"
-if [[ "$ARCH" != "aarch64" && "$ARCH" != "armv7l" ]]; then
-	echo "ERROR: This script is intended for Raspberry Pi (aarch64/armv7l)."
-	echo "Detected architecture: $ARCH"
-	exit 1
-fi
+OS="$(uname -s)"
 
-echo "=== SC-OSC Installer ==="
-echo "Architecture: $ARCH"
-if [[ "$FROM_SOURCE" == true ]]; then
-	echo "Mode: build from source"
+if [[ "$MAC_MODE" == true ]]; then
+	if [[ "$OS" != "Darwin" ]]; then
+		echo "ERROR: --mac flag requires macOS. Detected: $OS"
+		exit 1
+	fi
+	echo "=== SC-OSC Installer (macOS) ==="
+elif [[ "$ARCH" != "aarch64" && "$ARCH" != "armv7l" ]]; then
+	echo "ERROR: This script is intended for Raspberry Pi (aarch64/armv7l) or macOS (--mac)."
+	echo "Detected: $OS $ARCH"
+	exit 1
 else
-	echo "Mode: redFrik standalone (pre-built)"
+	echo "=== SC-OSC Installer ==="
+	echo "Architecture: $ARCH"
+	if [[ "$FROM_SOURCE" == true ]]; then
+		echo "Mode: build from source"
+	else
+		echo "Mode: redFrik standalone (pre-built)"
+	fi
 fi
 echo ""
 
+if [[ "$MAC_MODE" == true ]]; then
 # ==========================================================================
-# System dependencies (needed for both modes)
+# macOS install via Homebrew
+# ==========================================================================
+echo "--- macOS: Installing via Homebrew ---"
+
+if ! command -v brew &>/dev/null; then
+	echo "ERROR: Homebrew not found. Install from https://brew.sh"
+	exit 1
+fi
+
+# Install SuperCollider (includes sclang, scsynth, sc3-plugins)
+if command -v sclang &>/dev/null; then
+	echo "sclang already installed: $(which sclang)"
+	SCLANG_BIN="$(which sclang)"
+else
+	echo "Installing SuperCollider..."
+	brew install --cask supercollider
+	# sclang is inside the app bundle
+	SCLANG_BIN="/Applications/SuperCollider.app/Contents/MacOS/sclang"
+	if [[ ! -x "$SCLANG_BIN" ]]; then
+		echo "ERROR: sclang not found at $SCLANG_BIN after install."
+		echo "Check SuperCollider.app installation and adjust SCLANG_BIN."
+		exit 1
+	fi
+	echo "SuperCollider installed."
+fi
+
+# Install liblo for oscdump testing tool
+brew list liblo &>/dev/null || brew install liblo
+
+# Python (macOS usually has python3 via Xcode/Homebrew)
+if ! command -v python3 &>/dev/null; then
+	echo "Installing Python..."
+	brew install python@3.12
+fi
+
+echo "macOS dependencies ready."
+echo ""
+
+else
+# ==========================================================================
+# Raspberry Pi: System dependencies (needed for both modes)
 # ==========================================================================
 echo "--- Installing system dependencies ---"
 sudo apt-get update -qq
@@ -226,8 +278,11 @@ else
 	fi
 fi
 
+fi # end if MAC_MODE / else Pi block
+
+if [[ "$MAC_MODE" != true ]]; then
 # ==========================================================================
-# JACK configuration
+# JACK configuration (Pi only — macOS uses CoreAudio)
 # ==========================================================================
 echo ""
 echo "--- Configuring JACK ---"
@@ -288,6 +343,8 @@ else
 	echo "Note: Add the following to rc.local or a systemd service to persist across reboots:"
 	echo "  $GOVERNOR_LINE"
 fi
+
+fi # end Pi-only JACK/permissions/governor block
 
 # ==========================================================================
 # Copy analyzer files
@@ -361,7 +418,7 @@ fi
 # ==========================================================================
 # Systemd service (optional)
 # ==========================================================================
-if [[ "$SETUP_SYSTEMD" == true ]]; then
+if [[ "$SETUP_SYSTEMD" == true && "$MAC_MODE" != true ]]; then
 	echo ""
 	echo "--- Setting up systemd service ---"
 	SERVICE_FILE="/etc/systemd/system/sc-osc.service"
@@ -403,22 +460,38 @@ echo "============================================="
 echo "  Installation complete!"
 echo "============================================="
 echo ""
-echo "SC installed via: $(if [[ "$FROM_SOURCE" == true ]]; then echo 'source build'; else echo 'redFrik standalone'; fi)"
+if [[ "$MAC_MODE" == true ]]; then
+	echo "Platform:         macOS"
+else
+	echo "SC installed via: $(if [[ "$FROM_SOURCE" == true ]]; then echo 'source build'; else echo 'redFrik standalone'; fi)"
+fi
 echo "sclang binary:    $SCLANG_BIN"
 echo ""
 echo "Next steps:"
-echo "  1. Reboot for audio group and limits to take effect"
-echo "  2. Plug in your USB audio interface"
-echo "  3. Edit ~/.jackdrc if your audio device is not hw:0"
-echo "     (run 'aplay -l' to list devices)"
-echo "  4. Test with hello.scd first:"
-echo "     export QT_QPA_PLATFORM=offscreen"
-echo "     $SCLANG_BIN $SC_OSC_DIR/hello.scd"
-echo "  5. Then run the full analyzer:"
-echo "     $SCLANG_BIN $SC_OSC_DIR/analyzer.scd"
-echo "  6. Verify OSC output:"
-echo "     oscdump 9000"
-echo "  7. For autostart via crontab:"
-echo "     crontab -e"
-echo "     @reboot $SC_OSC_DIR/autostart.sh"
+if [[ "$MAC_MODE" == true ]]; then
+	echo "  1. Edit $SC_OSC_DIR/config.env (set OSC destinations)"
+	echo "  2. Test with hello.scd first:"
+	echo "     $SCLANG_BIN $SC_OSC_DIR/hello.scd"
+	echo "  3. Run the analyzer:"
+	echo "     source $SC_OSC_DIR/config.env && $SCLANG_BIN $SC_OSC_DIR/analyzer.scd"
+	echo "  4. Start the web server:"
+	echo "     source $SC_OSC_DIR/.venv/bin/activate && python -m web.server"
+	echo "  5. Verify OSC output:"
+	echo "     oscdump 9000"
+else
+	echo "  1. Reboot for audio group and limits to take effect"
+	echo "  2. Plug in your USB audio interface"
+	echo "  3. Edit ~/.jackdrc if your audio device is not hw:0"
+	echo "     (run 'aplay -l' to list devices)"
+	echo "  4. Test with hello.scd first:"
+	echo "     export QT_QPA_PLATFORM=offscreen"
+	echo "     $SCLANG_BIN $SC_OSC_DIR/hello.scd"
+	echo "  5. Then run the full analyzer:"
+	echo "     $SCLANG_BIN $SC_OSC_DIR/analyzer.scd"
+	echo "  6. Verify OSC output:"
+	echo "     oscdump 9000"
+	echo "  7. For autostart via crontab:"
+	echo "     crontab -e"
+	echo "     @reboot $SC_OSC_DIR/autostart.sh"
+fi
 echo ""

@@ -317,6 +317,48 @@ echo "$SCLANG_BIN" > "$SC_OSC_DIR/.sclang_path"
 echo "Files copied to $SC_OSC_DIR"
 
 # ==========================================================================
+# Python virtual environment
+# ==========================================================================
+echo ""
+echo "--- Setting up Python virtual environment ---"
+VENV_DIR="$SC_OSC_DIR/.venv"
+
+# Find Python 3.12+ (try python3.12, python3.13, ..., then fall back to python3)
+PYTHON_BIN=""
+for py in python3.13 python3.12 python3; do
+	if command -v "$py" &>/dev/null; then
+		PY_VER=$("$py" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+		PY_MAJOR=$("$py" -c 'import sys; print(sys.version_info.major)')
+		PY_MINOR=$("$py" -c 'import sys; print(sys.version_info.minor)')
+		if [[ "$PY_MAJOR" -ge 3 && "$PY_MINOR" -ge 12 ]]; then
+			PYTHON_BIN="$py"
+			break
+		fi
+	fi
+done
+
+if [[ -z "$PYTHON_BIN" ]]; then
+	echo "WARNING: Python 3.12+ not found. Skipping virtual environment setup."
+	echo "Install Python 3.12+ and re-run, or create the venv manually:"
+	echo "  python3.12 -m venv $VENV_DIR"
+else
+	echo "Using $PYTHON_BIN (version $PY_VER)"
+	if [[ -d "$VENV_DIR" ]]; then
+		echo "Virtual environment already exists at $VENV_DIR"
+	else
+		"$PYTHON_BIN" -m venv "$VENV_DIR"
+		echo "Created virtual environment at $VENV_DIR"
+	fi
+	# Install/upgrade pip and any requirements if present
+	"$VENV_DIR/bin/pip" install --upgrade pip --quiet
+	if [[ -f "$SCRIPT_DIR/requirements.txt" ]]; then
+		"$VENV_DIR/bin/pip" install -r "$SCRIPT_DIR/requirements.txt" --quiet
+		echo "Installed Python dependencies from requirements.txt"
+	fi
+	echo "Activate with: source $VENV_DIR/bin/activate"
+fi
+
+# ==========================================================================
 # Systemd service (optional)
 # ==========================================================================
 if [[ "$SETUP_SYSTEMD" == true ]]; then

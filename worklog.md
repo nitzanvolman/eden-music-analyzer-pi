@@ -15,3 +15,4 @@
   - INSTALL.md — Prerequisites, quick/source install, manual steps
   - TROUBLESHOOTING.md — All troubleshooting sections and diagnostic checklist
   The README links to both new files at the top (Install) and bottom (Troubleshooting).
+- [Task #3] ✅

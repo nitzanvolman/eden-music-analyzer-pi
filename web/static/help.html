@@ -92,12 +92,17 @@ h1 + p { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 2rem; }
 </div>
 
 <div class="feature">
-  <h2>Onset Detection <span class="osc">/audio/onset</span> <span class="rate">event</span></h2>
-  <p>Detects when a new note or drum hit starts — produces a single trigger pulse at each onset. Uses configurable detection algorithms optimized for different music styles.</p>
-  <p class="detail"><strong>Output:</strong> Trigger (sends 1 on each detected onset). Event-driven, not periodic.</p>
-  <p class="detail"><strong>Use case:</strong> Flash lights on hits, trigger strobes, sync visual events to musical attacks.</p>
-  <p class="detail"><strong>Config:</strong> SC_ONSET_THRESHOLD (0.0–1.0, lower = more sensitive), SC_ONSET_ALGORITHM (rcomplex, complex, phase, wphase, mkl, magsum, power).</p>
-  <div class="values">rcomplex = all-round | mkl = percussive | phase = pitched | power = simple energy</div>
+  <h2>Onset Detection Suite <span class="rate">event</span></h2>
+  <p>Ten parallel onset detectors, each tuned for a distinct musical event using different algorithms and frequency bands. All fire independently as trigger pulses.</p>
+  <p class="detail"><strong>Output:</strong> Each channel sends 1 on trigger. Event-driven, not periodic.</p>
+  <p class="detail"><strong>Use case:</strong> Flash lights on kicks, trigger strobes on snares, sync visuals to melodic note changes — each independently routable.</p>
+  <p class="detail"><strong>Percussive channels (mkl algorithm):</strong></p>
+  <div class="values">/audio/onset/kick — Kick drum (LPF 100 Hz) | /audio/onset/snare — Snare, claps (BPF 200–2000 Hz) | /audio/onset/hihat — Hi-hats, cymbals (HPF 5000 Hz) | /audio/onset/perc — Any percussive hit (full spectrum)</div>
+  <p class="detail"><strong>Melodic channels (phase algorithm):</strong></p>
+  <div class="values">/audio/onset/bass — Bass note changes (LPF 200 Hz) | /audio/onset/melody — Vocal/synth notes (BPF 300–4000 Hz) | /audio/onset/bright — High-pitched changes (HPF 3000 Hz)</div>
+  <p class="detail"><strong>General channels:</strong></p>
+  <div class="values">/audio/onset/any — Catch-all (rcomplex) | /audio/onset/drop — Big energy spikes (power) | /audio/onset/soft — Only obvious onsets (rcomplex, high threshold)</div>
+  <p class="detail"><strong>Config:</strong> SC_FEATURE_ONSET_SUITE (master toggle), SC_ONSET_{NAME} (per-channel on/off), SC_ONSET_{NAME}_THRESHOLD (per-channel sensitivity).</p>
 </div>
 
 <div class="section-label">Timbral & Harmonic Features</div>
@@ -151,7 +156,7 @@ h1 + p { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 2rem; }
 <div class="feature">
   <h2>Feature Toggles</h2>
   <p>Each feature can be individually disabled to save CPU on the Raspberry Pi. Disabled features are completely excluded from the analysis — no UGen computation, no OSC messages sent.</p>
-  <p class="detail"><strong>Config:</strong> SC_FEATURE_AMPLITUDE, SC_FEATURE_PITCH, SC_FEATURE_LOUDNESS, SC_FEATURE_CENTROID, SC_FEATURE_FLATNESS, SC_FEATURE_ONSET, SC_FEATURE_MFCC, SC_FEATURE_KEY, SC_FEATURE_BEAT, SC_FEATURE_CHROMA (all default 1 = enabled, set to 0 to disable).</p>
+  <p class="detail"><strong>Config:</strong> SC_FEATURE_AMPLITUDE, SC_FEATURE_PITCH, SC_FEATURE_LOUDNESS, SC_FEATURE_CENTROID, SC_FEATURE_FLATNESS, SC_FEATURE_ONSET_SUITE, SC_FEATURE_MFCC, SC_FEATURE_KEY, SC_FEATURE_BEAT, SC_FEATURE_CHROMA (all default 1 = enabled, set to 0 to disable). Individual onset channels have their own toggles (SC_ONSET_{NAME}).</p>
 </div>
 
 </div>

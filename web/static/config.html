@@ -56,14 +56,24 @@ const SECTIONS = [
     { title: "FFT", keys: ["SC_FFT_SIZE"] },
     { title: "Amplitude", keys: ["SC_AMP_ATTACK_TIME", "SC_AMP_RELEASE_TIME"] },
     { title: "Pitch Detection", keys: ["SC_PITCH_MIN_FREQ", "SC_PITCH_MAX_FREQ"] },
-    { title: "Onset Detection", keys: ["SC_ONSET_THRESHOLD", "SC_ONSET_ALGORITHM"] },
+    { title: "Onset Suite — Channels", keys: [
+        "SC_ONSET_KICK", "SC_ONSET_SNARE", "SC_ONSET_HIHAT", "SC_ONSET_PERC",
+        "SC_ONSET_BASS", "SC_ONSET_MELODY", "SC_ONSET_BRIGHT",
+        "SC_ONSET_ANY", "SC_ONSET_DROP", "SC_ONSET_SOFT"
+    ]},
+    { title: "Onset Suite — Thresholds", keys: [
+        "SC_ONSET_KICK_THRESHOLD", "SC_ONSET_SNARE_THRESHOLD", "SC_ONSET_HIHAT_THRESHOLD",
+        "SC_ONSET_PERC_THRESHOLD", "SC_ONSET_BASS_THRESHOLD", "SC_ONSET_MELODY_THRESHOLD",
+        "SC_ONSET_BRIGHT_THRESHOLD", "SC_ONSET_ANY_THRESHOLD",
+        "SC_ONSET_DROP_THRESHOLD", "SC_ONSET_SOFT_THRESHOLD"
+    ]},
     { title: "MFCC", keys: ["SC_MFCC_NUM_COEFF"] },
     { title: "Key Detection", keys: ["SC_KEY_DECAY_TIME"] },
     { title: "Beat Tracking", keys: ["SC_BEAT_LOCK"] },
     { title: "Trigger Rates (Hz)", keys: ["SC_TRIG_RATE_FAST", "SC_TRIG_RATE_MEDIUM", "SC_TRIG_RATE_SLOW"] },
     { title: "Feature Toggles", keys: [
         "SC_FEATURE_AMPLITUDE", "SC_FEATURE_PITCH", "SC_FEATURE_LOUDNESS",
-        "SC_FEATURE_CENTROID", "SC_FEATURE_FLATNESS", "SC_FEATURE_ONSET",
+        "SC_FEATURE_CENTROID", "SC_FEATURE_FLATNESS", "SC_FEATURE_ONSET_SUITE",
         "SC_FEATURE_MFCC", "SC_FEATURE_KEY", "SC_FEATURE_BEAT", "SC_FEATURE_CHROMA"
     ]},
     { title: "Test Mode", keys: ["SC_TEST_MODE"] },
@@ -73,14 +83,18 @@ const SECTIONS = [
 // Select options for specific keys
 const SELECT_OPTIONS = {
     SC_FFT_SIZE: ["512", "1024", "2048", "4096"],
-    SC_ONSET_ALGORITHM: ["rcomplex", "complex", "phase", "wphase", "mkl", "magsum", "power"],
     SC_BEAT_LOCK: ["0", "1"],
     SC_TEST_MODE: ["0", "1"],
     SC_FEATURE_AMPLITUDE: ["0", "1"], SC_FEATURE_PITCH: ["0", "1"],
     SC_FEATURE_LOUDNESS: ["0", "1"], SC_FEATURE_CENTROID: ["0", "1"],
-    SC_FEATURE_FLATNESS: ["0", "1"], SC_FEATURE_ONSET: ["0", "1"],
+    SC_FEATURE_FLATNESS: ["0", "1"], SC_FEATURE_ONSET_SUITE: ["0", "1"],
     SC_FEATURE_MFCC: ["0", "1"], SC_FEATURE_KEY: ["0", "1"],
     SC_FEATURE_BEAT: ["0", "1"], SC_FEATURE_CHROMA: ["0", "1"],
+    SC_ONSET_KICK: ["0", "1"], SC_ONSET_SNARE: ["0", "1"],
+    SC_ONSET_HIHAT: ["0", "1"], SC_ONSET_PERC: ["0", "1"],
+    SC_ONSET_BASS: ["0", "1"], SC_ONSET_MELODY: ["0", "1"],
+    SC_ONSET_BRIGHT: ["0", "1"], SC_ONSET_ANY: ["0", "1"],
+    SC_ONSET_DROP: ["0", "1"], SC_ONSET_SOFT: ["0", "1"],
 };
 
 let defaults = {};

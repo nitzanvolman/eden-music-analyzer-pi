@@ -149,17 +149,74 @@ header h1 {
   box-shadow: 0 0 30px rgba(233,69,96,0.3), inset 0 0 30px rgba(233,69,96,0.05);
 }
 
-/* === ONSET FLASH === */
-.onset-flash {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 100;
-  opacity: 0;
-  background: radial-gradient(circle at center, rgba(255,215,0,0.15) 0%, transparent 70%);
-  transition: opacity 0.05s;
+/* === ONSET SUITE === */
+.onset-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
-.onset-flash.active { opacity: 1; transition: opacity 0s; }
+@media (max-width: 620px) { .onset-grid { grid-template-columns: repeat(3, 1fr); } }
+
+.onset-pip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem 0.2rem;
+  border-radius: 6px;
+  background: var(--surface2);
+  border: 1px solid transparent;
+  transition: background 0.3s ease-out, border-color 0.3s ease-out, box-shadow 0.3s ease-out;
+}
+.onset-pip.lit {
+  transition: background 0s, border-color 0s, box-shadow 0s;
+}
+.onset-pip.lit.perc-type {
+  background: rgba(233,69,96,0.25);
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(233,69,96,0.4);
+}
+.onset-pip.lit.melody-type {
+  background: rgba(0,229,255,0.2);
+  border-color: var(--cyan);
+  box-shadow: 0 0 12px rgba(0,229,255,0.4);
+}
+.onset-pip.lit.general-type {
+  background: rgba(255,215,0,0.2);
+  border-color: var(--gold);
+  box-shadow: 0 0 12px rgba(255,215,0,0.4);
+}
+.onset-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--dim);
+  transition: background 0.3s ease-out, box-shadow 0.3s ease-out;
+}
+.onset-pip.lit.perc-type .onset-dot {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+  transition: background 0s, box-shadow 0s;
+}
+.onset-pip.lit.melody-type .onset-dot {
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
+  transition: background 0s, box-shadow 0s;
+}
+.onset-pip.lit.general-type .onset-dot {
+  background: var(--gold);
+  box-shadow: 0 0 8px var(--gold);
+  transition: background 0s, box-shadow 0s;
+}
+.onset-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.5rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.onset-pip.lit .onset-label { color: #fff; }
 
 /* === METER BAR === */
 .meter {
@@ -247,7 +304,6 @@ canvas {
 <body>
 
 <div class="scanline"></div>
-<div class="onset-flash" id="onsetFlash"></div>
 
 <nav class="nav" id="navBar">
   <a href="/">Home</a>
@@ -320,11 +376,21 @@ canvas {
     <div class="meter"><div class="meter-fill noise" id="flatBar" style="width:0%"></div></div>
   </div>
 
-  <!-- Onset -->
-  <div class="card">
+  <!-- Onset Suite -->
+  <div class="card wide">
     <div class="card-label">Onsets</div>
-    <div class="card-value" id="onsetCount">0</div>
-    <div class="card-sub" id="onsetRate">0 /sec</div>
+    <div class="onset-grid">
+      <div class="onset-pip perc-type" id="onset-kick"><div class="onset-dot"></div><div class="onset-label">Kick</div></div>
+      <div class="onset-pip perc-type" id="onset-snare"><div class="onset-dot"></div><div class="onset-label">Snare</div></div>
+      <div class="onset-pip perc-type" id="onset-hihat"><div class="onset-dot"></div><div class="onset-label">HiHat</div></div>
+      <div class="onset-pip perc-type" id="onset-perc"><div class="onset-dot"></div><div class="onset-label">Perc</div></div>
+      <div class="onset-pip melody-type" id="onset-bass"><div class="onset-dot"></div><div class="onset-label">Bass</div></div>
+      <div class="onset-pip melody-type" id="onset-melody"><div class="onset-dot"></div><div class="onset-label">Melody</div></div>
+      <div class="onset-pip melody-type" id="onset-bright"><div class="onset-dot"></div><div class="onset-label">Bright</div></div>
+      <div class="onset-pip general-type" id="onset-any"><div class="onset-dot"></div><div class="onset-label">Any</div></div>
+      <div class="onset-pip general-type" id="onset-drop"><div class="onset-dot"></div><div class="onset-label">Drop</div></div>
+      <div class="onset-pip general-type" id="onset-soft"><div class="onset-dot"></div><div class="onset-label">Soft</div></div>
+    </div>
   </div>
 
   <!-- Chromagram -->
@@ -353,7 +419,6 @@ const state = {
   key: 0, mode: 1,
   chroma: new Float32Array(12),
   mfcc: new Float32Array(13),
-  onsetCount: 0, onsetTimes: [],
 };
 
 // Smoothed values for display
@@ -410,10 +475,17 @@ function handleOSC(addr, args) {
     case '/audio/spectral/flatness':
       state.flatness = args[0];
       break;
-    case '/audio/onset':
-      state.onsetCount++;
-      state.onsetTimes.push(performance.now());
-      flashOnset();
+    case '/audio/onset/kick':
+    case '/audio/onset/snare':
+    case '/audio/onset/hihat':
+    case '/audio/onset/perc':
+    case '/audio/onset/bass':
+    case '/audio/onset/melody':
+    case '/audio/onset/bright':
+    case '/audio/onset/any':
+    case '/audio/onset/drop':
+    case '/audio/onset/soft':
+      flashOnsetPip(addr.split('/').pop());
       break;
     case '/audio/beat':
       flashBeat();
@@ -445,12 +517,13 @@ function flashBeat() {
   beatTimeout = setTimeout(() => el.classList.remove('flash'), 150);
 }
 
-let onsetTimeout = null;
-function flashOnset() {
-  const el = document.getElementById('onsetFlash');
-  el.classList.add('active');
-  clearTimeout(onsetTimeout);
-  onsetTimeout = setTimeout(() => el.classList.remove('active'), 80);
+const onsetTimeouts = {};
+function flashOnsetPip(channel) {
+  const el = document.getElementById('onset-' + channel);
+  if (!el) return;
+  el.classList.add('lit');
+  clearTimeout(onsetTimeouts[channel]);
+  onsetTimeouts[channel] = setTimeout(() => el.classList.remove('lit'), 200);
 }
 
 // ============================================================
@@ -499,12 +572,6 @@ function updateDOM() {
   modeEl.textContent = state.mode === 1 ? 'major' : 'minor';
   modeEl.className = 'key-mode ' + (state.mode === 1 ? 'major' : 'minor');
 
-  // Onset rate (hits per second over last 2 seconds)
-  const now = performance.now();
-  state.onsetTimes = state.onsetTimes.filter(t => now - t < 2000);
-  const rate = state.onsetTimes.length / 2;
-  document.getElementById('onsetCount').textContent = state.onsetCount;
-  document.getElementById('onsetRate').textContent = rate.toFixed(1) + ' /sec';
 }
 
 // ============================================================

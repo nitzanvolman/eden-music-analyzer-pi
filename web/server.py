@@ -8,9 +8,11 @@ Uses aiohttp for async HTTP + WebSocket support.
 import os
 import time
 import json
+import logging
 import asyncio
 import shutil
 import subprocess
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from aiohttp import web
 
@@ -261,6 +263,33 @@ async def api_config_set(request: web.Request) -> web.Response:
     })
 
 
+async def api_logs(request: web.Request) -> web.Response:
+    """GET /api/logs — return recent log lines.
+
+    Query params:
+      file: "analyzer" or "web" (default "analyzer")
+      lines: number of lines to return (default 100, max 500)
+    """
+    log_dir = SC_OSC_DIR / "logs"
+    file_name = request.query.get("file", "analyzer")
+    num_lines = min(int(request.query.get("lines", "100")), 500)
+
+    if file_name not in ("analyzer", "web"):
+        return web.json_response({"status": "error", "message": "Invalid file"}, status=400)
+
+    log_path = log_dir / f"{file_name}.log"
+    if not log_path.exists():
+        return web.json_response({"lines": [], "file": file_name})
+
+    try:
+        text = log_path.read_text(errors="replace")
+        all_lines = text.splitlines()
+        recent = all_lines[-num_lines:] if len(all_lines) > num_lines else all_lines
+        return web.json_response({"lines": recent, "file": file_name, "total": len(all_lines)})
+    except Exception as e:
+        return web.json_response({"status": "error", "message": str(e)}, status=500)
+
+
 async def api_osc_latest(request: web.Request) -> web.Response:
     """GET /api/osc/latest — return latest value for every OSC address."""
     return web.json_response(get_latest())
@@ -309,6 +338,7 @@ def create_app() -> web.Application:
     app.router.add_post("/api/restart", api_restart)
     app.router.add_get("/api/config", api_config_get)
     app.router.add_post("/api/config", api_config_set)
+    app.router.add_get("/api/logs", api_logs)
     app.router.add_get("/api/osc/latest", api_osc_latest)
     app.router.add_get("/ws/osc", ws_osc)
 
@@ -323,10 +353,34 @@ def create_app() -> web.Application:
     return app
 
 
+def setup_logging() -> None:
+    """Configure logging with rotation. Logs to ~/sc-osc/logs/web.log."""
+    log_dir = SC_OSC_DIR / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / "web.log"
+
+    handler = RotatingFileHandler(
+        log_file, maxBytes=5 * 1024 * 1024, backupCount=3,  # 5 MB, keep 3 backups
+    )
+    handler.setFormatter(logging.Formatter(
+        "%(asctime)s %(levelname)s %(name)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    ))
+
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    root.addHandler(handler)
+
+    # Also log to stderr for interactive use
+    root.addHandler(logging.StreamHandler())
+
+
 def main() -> None:
     """Entry point for the web server."""
+    setup_logging()
+    logger = logging.getLogger("sc-osc.web")
     app = create_app()
-    print(f"SC-OSC Web Server starting on port {WEB_PORT}")
+    logger.info("SC-OSC Web Server starting on port %d", WEB_PORT)
     web.run_app(app, host="0.0.0.0", port=WEB_PORT, print=None)
 
 

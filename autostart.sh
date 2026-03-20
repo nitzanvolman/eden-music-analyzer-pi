@@ -3,8 +3,11 @@
 # Usage: add to crontab with @reboot ~/sc-osc/autostart.sh
 set -euo pipefail
 
-LOGFILE="/tmp/sc-osc.log"
 SC_OSC_DIR="$HOME/sc-osc"
+LOG_DIR="$SC_OSC_DIR/logs"
+LOGFILE="$LOG_DIR/analyzer.log"
+MAX_LOG_SIZE=5242880  # 5 MB
+MAX_LOG_FILES=3
 ANALYZER="$SC_OSC_DIR/analyzer.scd"
 CONFIG="$SC_OSC_DIR/config.env"
 SCLANG_PATH_FILE="$SC_OSC_DIR/.sclang_path"
@@ -35,6 +38,20 @@ export DISPLAY=
 
 # Wait for system services (audio, network) to stabilize
 sleep 15
+
+# --- Log rotation ---
+mkdir -p "$LOG_DIR"
+if [[ -f "$LOGFILE" ]]; then
+	LOG_SIZE=$(stat -c%s "$LOGFILE" 2>/dev/null || stat -f%z "$LOGFILE" 2>/dev/null || echo 0)
+	if [[ "$LOG_SIZE" -gt "$MAX_LOG_SIZE" ]]; then
+		# Rotate: .3 -> delete, .2 -> .3, .1 -> .2, current -> .1
+		for i in $(seq $((MAX_LOG_FILES - 1)) -1 1); do
+			[[ -f "$LOGFILE.$i" ]] && mv "$LOGFILE.$i" "$LOGFILE.$((i + 1))"
+		done
+		mv "$LOGFILE" "$LOGFILE.1"
+		echo "=== Log rotated $(date) ===" > "$LOGFILE"
+	fi
+fi
 
 echo "=== SC-OSC autostart $(date) ===" >> "$LOGFILE"
 echo "  sclang: $SCLANG" >> "$LOGFILE"

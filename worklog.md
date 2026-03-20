@@ -81,6 +81,7 @@
 - [Task #25] ✅
 - [Task #26] ✅
 - [Task #27] ✅
+- [Task #28] ✅
 - [Task #28] Organized viz UI into 3 labeled sections: "Rhythm & Timing" (Tempo + Onsets), "Pitch & Harmony" (Key + Pitch + Chromagram), "Dynamics & Timbre" (Amplitude + Loudness + Brightness + Noisiness). Added section-group CSS with label + horizontal rule divider.
 - [Task #27] Removed MFCC Timbre card from viz UI: removed HTML card, drawMFCC function, mfcc state array, mfcc handleOSC case, and mfccCanvas from sizeCanvases. MFCC data still flows via OSC/WebSocket — just no UI card.
 - [Task #26] Brightness card redesign: replaced Hz number + fill bar with sliding white marker on a dark-to-bright gradient track. Marker position represents spectral centroid with smooth CSS transition. Added descriptive label (dark/warm/neutral/bright/brilliant) based on centroid range.

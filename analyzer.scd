@@ -28,12 +28,19 @@
 // "var" declares local variables — SC requires all vars at the top of their scope.
 var destStr, dests;
 var cfgInputChan, cfgFFTSize, cfgAmpAttack, cfgAmpRelease;
-var cfgPitchMinFreq, cfgPitchMaxFreq, cfgOnsetThresh, cfgOnsetAlgo;
+var cfgPitchMinFreq, cfgPitchMaxFreq;
 var cfgMFCCCount, cfgKeyDecay, cfgBeatLock;
 var cfgTrigFast, cfgTrigMedium, cfgTrigSlow;
 var cfgTestMode;
 var featAmp, featPitch, featLoud, featCentroid, featFlatness;
-var featOnset, featMFCC, featKey, featBeat, featChroma;
+var featMFCC, featKey, featBeat, featChroma;
+var featOnsetSuite;
+var onsetKick, onsetSnare, onsetHihat, onsetPerc;
+var onsetBass, onsetMelody, onsetBright;
+var onsetAny, onsetDrop, onsetSoft;
+var threshKick, threshSnare, threshHihat, threshPerc;
+var threshBass, threshMelody, threshBright;
+var threshAny, threshDrop, threshSoft;
 
 // ============================================================================
 // CONFIGURATION
@@ -72,8 +79,6 @@ cfgAmpAttack   = ("SC_AMP_ATTACK_TIME".getenv ? "0.01").asFloat;
 cfgAmpRelease  = ("SC_AMP_RELEASE_TIME".getenv ? "0.1").asFloat;
 cfgPitchMinFreq = ("SC_PITCH_MIN_FREQ".getenv ? "50").asFloat;
 cfgPitchMaxFreq = ("SC_PITCH_MAX_FREQ".getenv ? "4000").asFloat;
-cfgOnsetThresh = ("SC_ONSET_THRESHOLD".getenv ? "0.5").asFloat;
-cfgOnsetAlgo   = ("SC_ONSET_ALGORITHM".getenv ? "rcomplex").asSymbol;
 cfgMFCCCount   = ("SC_MFCC_NUM_COEFF".getenv ? "13").asInteger;
 cfgKeyDecay    = ("SC_KEY_DECAY_TIME".getenv ? "2.0").asFloat;
 cfgBeatLock    = ("SC_BEAT_LOCK".getenv ? "0").asInteger;
@@ -89,11 +94,36 @@ featPitch    = ("SC_FEATURE_PITCH".getenv ? "1") == "1";
 featLoud     = ("SC_FEATURE_LOUDNESS".getenv ? "1") == "1";
 featCentroid = ("SC_FEATURE_CENTROID".getenv ? "1") == "1";
 featFlatness = ("SC_FEATURE_FLATNESS".getenv ? "1") == "1";
-featOnset    = ("SC_FEATURE_ONSET".getenv ? "1") == "1";
+featOnsetSuite = ("SC_FEATURE_ONSET_SUITE".getenv ? "1") == "1";
 featMFCC     = ("SC_FEATURE_MFCC".getenv ? "1") == "1";
 featKey      = ("SC_FEATURE_KEY".getenv ? "1") == "1";
 featBeat     = ("SC_FEATURE_BEAT".getenv ? "1") == "1";
 featChroma   = ("SC_FEATURE_CHROMA".getenv ? "1") == "1";
+
+// --- Onset suite channel toggles and thresholds ---
+// Each onset channel can be enabled/disabled independently.
+// Master toggle SC_FEATURE_ONSET_SUITE gates the entire suite.
+onsetKick   = featOnsetSuite and: { ("SC_ONSET_KICK".getenv   ? "1") == "1" };
+onsetSnare  = featOnsetSuite and: { ("SC_ONSET_SNARE".getenv  ? "1") == "1" };
+onsetHihat  = featOnsetSuite and: { ("SC_ONSET_HIHAT".getenv  ? "1") == "1" };
+onsetPerc   = featOnsetSuite and: { ("SC_ONSET_PERC".getenv   ? "1") == "1" };
+onsetBass   = featOnsetSuite and: { ("SC_ONSET_BASS".getenv   ? "1") == "1" };
+onsetMelody = featOnsetSuite and: { ("SC_ONSET_MELODY".getenv ? "1") == "1" };
+onsetBright = featOnsetSuite and: { ("SC_ONSET_BRIGHT".getenv ? "1") == "1" };
+onsetAny    = featOnsetSuite and: { ("SC_ONSET_ANY".getenv    ? "1") == "1" };
+onsetDrop   = featOnsetSuite and: { ("SC_ONSET_DROP".getenv   ? "0") == "1" };
+onsetSoft   = featOnsetSuite and: { ("SC_ONSET_SOFT".getenv   ? "0") == "1" };
+
+threshKick   = ("SC_ONSET_KICK_THRESHOLD".getenv   ? "0.3").asFloat;
+threshSnare  = ("SC_ONSET_SNARE_THRESHOLD".getenv  ? "0.4").asFloat;
+threshHihat  = ("SC_ONSET_HIHAT_THRESHOLD".getenv  ? "0.3").asFloat;
+threshPerc   = ("SC_ONSET_PERC_THRESHOLD".getenv   ? "0.4").asFloat;
+threshBass   = ("SC_ONSET_BASS_THRESHOLD".getenv   ? "0.7").asFloat;
+threshMelody = ("SC_ONSET_MELODY_THRESHOLD".getenv ? "0.7").asFloat;
+threshBright = ("SC_ONSET_BRIGHT_THRESHOLD".getenv ? "0.7").asFloat;
+threshAny    = ("SC_ONSET_ANY_THRESHOLD".getenv    ? "0.5").asFloat;
+threshDrop   = ("SC_ONSET_DROP_THRESHOLD".getenv   ? "0.8").asFloat;
+threshSoft   = ("SC_ONSET_SOFT_THRESHOLD".getenv   ? "0.9").asFloat;
 
 // --- Startup banner (printed to console / log) ---
 "==============================================".postln;
@@ -197,14 +227,29 @@ if(cfgTestMode, {
 		}).play;
 	});
 
-	// --- Onset (simulated random hits) ---
-	if(featOnset, {
-		Routine({
-			loop {
-				dests.do({ |d| d.sendMsg('/audio/onset', 1) });
-				(0.1 + 0.4.rand).wait;
-			};
-		}).play;
+	// --- Onset suite (simulated triggers at varying rates) ---
+	// Percussive channels fire faster, melodic channels slower.
+	[
+		[onsetKick,   '/audio/onset/kick',   0.4,  0.3],
+		[onsetSnare,  '/audio/onset/snare',  0.5,  0.4],
+		[onsetHihat,  '/audio/onset/hihat',  0.15, 0.1],
+		[onsetPerc,   '/audio/onset/perc',   0.2,  0.2],
+		[onsetBass,   '/audio/onset/bass',   0.8,  0.5],
+		[onsetMelody, '/audio/onset/melody',  0.6,  0.4],
+		[onsetBright, '/audio/onset/bright', 0.5,  0.3],
+		[onsetAny,    '/audio/onset/any',    0.15, 0.15],
+		[onsetDrop,   '/audio/onset/drop',   2.0,  2.0],
+		[onsetSoft,   '/audio/onset/soft',   1.0,  1.0],
+	].do({ |spec|
+		var enabled = spec[0], path = spec[1], base = spec[2], jitter = spec[3];
+		if(enabled, {
+			Routine({
+				loop {
+					dests.do({ |d| d.sendMsg(path, 1) });
+					(base + jitter.rand).wait;
+				};
+			}).play;
+		});
 	});
 
 	// --- Heartbeat (always active) ---
@@ -244,7 +289,7 @@ s.waitForBoot({
 
 		// --- Variable declarations (SC requires these at top of function) ---
 		var sig, chain;
-		var amp, freq, hasFreq, onset, loud, centroid, flatness;
+		var amp, freq, hasFreq, loud, centroid, flatness;
 		var mfcc, keyRaw, bt2, beatTrig, bpm;
 		var chroma;
 
@@ -319,11 +364,67 @@ s.waitForBoot({
 		});
 
 		// ====================================================================
-		// FEATURE: Onset detection (note/drum hits)
+		// FEATURE: Onset detection suite
 		// ====================================================================
-		if(featOnset, {
-			onset = Onsets.kr(chain, cfgOnsetThresh, cfgOnsetAlgo);
-			SendReply.kr(onset, '/tr_onset', [1]);
+		// Multiple onset detectors running in parallel, each tuned for a
+		// distinct musical event. Frequency-filtered channels run their own
+		// FFT on a band-passed version of the signal. Full-spectrum channels
+		// share the main FFT chain via PV_Copy.
+		//
+		// Percussive channels use \mkl (spectral shape change — sharp transients).
+		// Melodic channels use \phase (phase deviation — pitched note changes).
+		// Catch-all uses \rcomplex (combined magnitude+phase — general purpose).
+		// Energy channel uses \power (raw energy — big impacts).
+
+		// --- Frequency-filtered onset channels ---
+		// Each applies an audio filter, then runs its own FFT + Onsets.
+		if(onsetKick, {
+			var sigLow = LPF.ar(sig, 100);
+			var fftLow = FFT(LocalBuf(cfgFFTSize), sigLow);
+			SendReply.kr(Onsets.kr(fftLow, threshKick, \mkl), '/tr_onset_kick', [1]);
+		});
+		if(onsetSnare, {
+			var sigMid = BPF.ar(sig, 632, 2.85);  // 200–2000 Hz (geometric center)
+			var fftMid = FFT(LocalBuf(cfgFFTSize), sigMid);
+			SendReply.kr(Onsets.kr(fftMid, threshSnare, \mkl), '/tr_onset_snare', [1]);
+		});
+		if(onsetHihat, {
+			var sigHi = HPF.ar(sig, 5000);
+			var fftHi = FFT(LocalBuf(cfgFFTSize), sigHi);
+			SendReply.kr(Onsets.kr(fftHi, threshHihat, \mkl), '/tr_onset_hihat', [1]);
+		});
+		if(onsetBass, {
+			var sigBass = LPF.ar(sig, 200);
+			var fftBass = FFT(LocalBuf(cfgFFTSize), sigBass);
+			SendReply.kr(Onsets.kr(fftBass, threshBass, \phase), '/tr_onset_bass', [1]);
+		});
+		if(onsetMelody, {
+			var sigMel = BPF.ar(sig, 1095, 3.38);  // 300–4000 Hz (geometric center)
+			var fftMel = FFT(LocalBuf(cfgFFTSize), sigMel);
+			SendReply.kr(Onsets.kr(fftMel, threshMelody, \phase), '/tr_onset_melody', [1]);
+		});
+		if(onsetBright, {
+			var sigBrt = HPF.ar(sig, 3000);
+			var fftBrt = FFT(LocalBuf(cfgFFTSize), sigBrt);
+			SendReply.kr(Onsets.kr(fftBrt, threshBright, \phase), '/tr_onset_bright', [1]);
+		});
+
+		// --- Full-spectrum onset channels (share main FFT via PV_Copy) ---
+		if(onsetPerc, {
+			var chainCopy = PV_Copy(chain, LocalBuf(cfgFFTSize));
+			SendReply.kr(Onsets.kr(chainCopy, threshPerc, \mkl), '/tr_onset_perc', [1]);
+		});
+		if(onsetAny, {
+			var chainCopy = PV_Copy(chain, LocalBuf(cfgFFTSize));
+			SendReply.kr(Onsets.kr(chainCopy, threshAny, \rcomplex), '/tr_onset_any', [1]);
+		});
+		if(onsetDrop, {
+			var chainCopy = PV_Copy(chain, LocalBuf(cfgFFTSize));
+			SendReply.kr(Onsets.kr(chainCopy, threshDrop, \power), '/tr_onset_drop', [1]);
+		});
+		if(onsetSoft, {
+			var chainCopy = PV_Copy(chain, LocalBuf(cfgFFTSize));
+			SendReply.kr(Onsets.kr(chainCopy, threshSoft, \rcomplex), '/tr_onset_soft', [1]);
 		});
 
 		// ====================================================================
@@ -419,10 +520,56 @@ s.waitForBoot({
 			dests.do({ |d| d.sendMsg('/audio/pitch', msg[3].asFloat, msg[4].asFloat) });
 		}, '/tr_pitch');
 	});
-	if(featOnset, {
-		OSCdef(\fwdOnset, { |msg|
-			dests.do({ |d| d.sendMsg('/audio/onset', 1) });
-		}, '/tr_onset');
+	// --- Onset suite forwarders ---
+	if(onsetKick, {
+		OSCdef(\fwdOnsetKick, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/onset/kick', 1) });
+		}, '/tr_onset_kick');
+	});
+	if(onsetSnare, {
+		OSCdef(\fwdOnsetSnare, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/onset/snare', 1) });
+		}, '/tr_onset_snare');
+	});
+	if(onsetHihat, {
+		OSCdef(\fwdOnsetHihat, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/onset/hihat', 1) });
+		}, '/tr_onset_hihat');
+	});
+	if(onsetPerc, {
+		OSCdef(\fwdOnsetPerc, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/onset/perc', 1) });
+		}, '/tr_onset_perc');
+	});
+	if(onsetBass, {
+		OSCdef(\fwdOnsetBass, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/onset/bass', 1) });
+		}, '/tr_onset_bass');
+	});
+	if(onsetMelody, {
+		OSCdef(\fwdOnsetMelody, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/onset/melody', 1) });
+		}, '/tr_onset_melody');
+	});
+	if(onsetBright, {
+		OSCdef(\fwdOnsetBright, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/onset/bright', 1) });
+		}, '/tr_onset_bright');
+	});
+	if(onsetAny, {
+		OSCdef(\fwdOnsetAny, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/onset/any', 1) });
+		}, '/tr_onset_any');
+	});
+	if(onsetDrop, {
+		OSCdef(\fwdOnsetDrop, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/onset/drop', 1) });
+		}, '/tr_onset_drop');
+	});
+	if(onsetSoft, {
+		OSCdef(\fwdOnsetSoft, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/onset/soft', 1) });
+		}, '/tr_onset_soft');
 	});
 	if(featLoud, {
 		OSCdef(\fwdLoudness, { |msg|

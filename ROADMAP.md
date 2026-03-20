@@ -98,6 +98,28 @@ installed), how to tune, and Output Reference (what the reciever of the OSC mess
 21. [🟢] - Web interface: log viewer screen — view logs in real-time from the web UI.
 22. [🟢] - CPU temperature monitoring + throttle alerts — expose Pi temp via web UI, warn when overheating.
 23. [🟢] - Analyzer heartbeat OSC — analyzer sends a periodic heartbeat OSC message; web home page reports analyzer status (alive/dead) based on heartbeat presence.
-
+24. [⚪] - Onset detection suite — replace the single onset detector with a multi-channel onset suite. Each channel runs the Onsets UGen with a specific algorithm, frequency band, and threshold tuned for a distinct musical event. All channels fire independently on their own OSC path. Uses PV_Copy to share a single FFT analysis across all onset instances.
+    - **Channels:**
+      | OSC Path | Algorithm | Frequency Band | Default Threshold | Detects |
+      |----------|-----------|---------------|-------------------|---------|
+      | `/audio/onset/kick` | mkl | LPF 100 Hz | 0.3 | Kick drum / bass drum thump |
+      | `/audio/onset/snare` | mkl | BPF 200–2000 Hz | 0.4 | Snare crack, claps, rim shots |
+      | `/audio/onset/hihat` | mkl | HPF 5000 Hz | 0.3 | Hi-hats, cymbals, shakers |
+      | `/audio/onset/perc` | mkl | Full spectrum | 0.4 | Any sharp percussive hit |
+      | `/audio/onset/bass` | phase | LPF 200 Hz | 0.7 | Bass note changes (synth bass, bass guitar) |
+      | `/audio/onset/melody` | phase | BPF 300–4000 Hz | 0.7 | Vocal/synth/lead note changes |
+      | `/audio/onset/bright` | phase | HPF 3000 Hz | 0.7 | High-pitched melodic changes, arpeggios |
+      | `/audio/onset/any` | rcomplex | Full spectrum | 0.5 | Catch-all — any onset of any kind |
+      | `/audio/onset/drop` | power | Full spectrum | 0.8 | Big energy spikes — drops, impacts, explosions |
+      | `/audio/onset/soft` | rcomplex | Full spectrum | 0.9 | Only the most obvious, unmistakable onsets |
+    - **Sub-tasks:**
+    - 24a. [🔵] - Analyzer (`analyzer.scd`): Replace the single Onsets UGen with the onset suite. For each channel: apply the frequency band filter (LPF/BPF/HPF) to the input signal, run FFT + Onsets with the specified algorithm and threshold, SendReply on the channel's OSC path. Use PV_Copy where channels share the same filtered signal. Each channel is gated by its own feature toggle env var. Remove the old `SC_ONSET_ALGORITHM` and `SC_ONSET_THRESHOLD` config vars.
+    - 24b. [⚪] - Config (`config_template.env`): Replace `SC_ONSET_ALGORITHM` and `SC_ONSET_THRESHOLD` with per-channel config. For each onset channel: `SC_ONSET_{NAME}=0/1` (enable/disable, default from table above) and `SC_ONSET_{NAME}_THRESHOLD` (default from table above). Remove the old single-onset config vars. Replace `SC_FEATURE_ONSET=1` with `SC_FEATURE_ONSET_SUITE=1` as a master toggle for the entire suite.
+    - 24c. [⚪] - Web OSC bridge (`web/osc_bridge.py`): Register listeners for all 10 onset OSC paths. Forward each as its own WebSocket message type (e.g. `onset/kick`, `onset/snare`, etc.). Update the latest-value cache to store each channel separately.
+    - 24d. [⚪] - Web UI: Update the visualization page to show the onset suite — replace the single onset indicator with a group of per-channel indicators. Each indicator is a flash/pulse animation (not a counter) — it lights up on trigger and fades out, like a beat light. Update the help page with descriptions of each onset channel and what it detects.
+    - 24e. [⚪] - Documentation: Update README.md output reference, help page, and CLAUDE.md to reflect the new onset suite OSC paths, config vars, and architecture.
+25. [⚪] - Pitch card redesign — replace the raw Hz display with a note history piano ribbon. Show a small horizontal piano keyboard (2–3 octaves) that scrolls left over time, highlighting the detected note on each update. Only display notes when pitch confidence is above a threshold to avoid jitter from noise. The current note name (e.g. "A4") should be shown large above the ribbon. Hz value can be small secondary text or removed entirely.
+26. [⚪] - Brightness card redesign — replace the raw Hz number with a sliding marker on a dark-to-bright gradient bar. The marker position represents the spectral centroid value. No number needed — the position on the gradient is the information. Apply exponential smoothing so the marker glides instead of jumping. Keep the existing color-temperature aesthetic of the bar.
+27. [⚪] - When i click on any of the cards in the visualization UI, I would like to open a modal popup showing the all of the specific OSC commands being send and their values in real time, so it's easy for me to program the OSC reciever.
 
 

@@ -7,10 +7,19 @@
     <style>
         body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; color: #e0e0e0; background: #1a1a2e; }
         h1 { color: #e94560; }
-        .status { padding: 1rem; background: #16213e; border-radius: 8px; margin: 1rem 0; }
+        .status { padding: 1rem; background: #16213e; border-radius: 8px; margin: 1rem 0; font-size: 0.9rem; }
         .ok { border-left: 4px solid #0f3460; }
+        .warning { border-left: 4px solid #ffd700; }
+        .critical { border-left: 4px solid #e94560; background: #2a1020; }
         .nav a { color: #e94560; text-decoration: none; margin-right: 1rem; }
         .nav { margin-bottom: 1rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; margin: 1rem 0; }
+        .card { background: #16213e; border-radius: 8px; padding: 0.75rem 1rem; border-left: 3px solid #0f3460; }
+        .card .label { font-size: 0.7rem; color: #5a5a7a; text-transform: uppercase; letter-spacing: 0.1em; }
+        .card .value { font-size: 1.3rem; color: #fff; margin-top: 0.25rem; }
+        .card .sub { font-size: 0.75rem; color: #5a5a7a; }
+        .card.warn { border-left-color: #ffd700; }
+        .card.crit { border-left-color: #e94560; }
     </style>
 </head>
 <body>
@@ -23,15 +32,91 @@
     </div>
     <h1>SC-OSC Audio Analyzer</h1>
     <div class="status ok" id="status">Connecting...</div>
+    <div class="grid" id="healthGrid" style="display:none"></div>
+    <div class="status" id="throttleAlert" style="display:none"></div>
     <script>
-        fetch('/api/ping')
-            .then(r => r.json())
-            .then(data => {
-                document.getElementById('status').textContent = 'Server: ' + data.status;
-            })
-            .catch(() => {
+        function formatBytes(b) {
+            if (b > 1073741824) return (b / 1073741824).toFixed(1) + ' GB';
+            if (b > 1048576) return (b / 1048576).toFixed(0) + ' MB';
+            return b + ' B';
+        }
+        function formatUptime(s) {
+            const h = Math.floor(s / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            return h > 0 ? h + 'h ' + m + 'm' : m + 'm';
+        }
+
+        async function loadHealth() {
+            try {
+                const resp = await fetch('/api/health');
+                const d = await resp.json();
+                document.getElementById('status').textContent = 'Server: ' + d.status;
+                document.getElementById('status').className = 'status ok';
+
+                const grid = document.getElementById('healthGrid');
+                grid.style.display = '';
+                let cards = '';
+
+                // Uptime
+                cards += `<div class="card"><div class="label">Uptime</div><div class="value">${formatUptime(d.uptime_seconds)}</div></div>`;
+
+                // CPU temp
+                if (d.cpu_temp_c !== undefined) {
+                    const cls = d.temp_alert === 'critical' ? 'crit' : d.temp_alert === 'warning' ? 'warn' : '';
+                    cards += `<div class="card ${cls}"><div class="label">CPU Temp</div><div class="value">${d.cpu_temp_c}&deg;C</div>` +
+                        (d.temp_alert ? `<div class="sub">${d.temp_alert}</div>` : '') + `</div>`;
+                }
+
+                // Load
+                if (d.load_avg && d.load_avg.length) {
+                    cards += `<div class="card"><div class="label">Load (1/5/15m)</div><div class="value">${d.load_avg.map(v => v.toFixed(2)).join(' ')}</div></div>`;
+                }
+
+                // Memory
+                if (d.memory && d.memory.MemTotal) {
+                    const used = d.memory.MemTotal - (d.memory.MemAvailable || d.memory.MemFree || 0);
+                    const pct = Math.round(used / d.memory.MemTotal * 100);
+                    cards += `<div class="card"><div class="label">Memory</div><div class="value">${pct}%</div><div class="sub">${formatBytes(used)} / ${formatBytes(d.memory.MemTotal)}</div></div>`;
+                }
+
+                // Disk
+                if (d.disk && d.disk.total) {
+                    const pct = Math.round(d.disk.used / d.disk.total * 100);
+                    cards += `<div class="card"><div class="label">Disk</div><div class="value">${pct}%</div><div class="sub">${formatBytes(d.disk.free)} free</div></div>`;
+                }
+
+                grid.innerHTML = cards;
+
+                // Throttle alerts
+                const alert = document.getElementById('throttleAlert');
+                if (d.throttle) {
+                    const issues = [];
+                    if (d.throttle.throttled_now) issues.push('CPU throttled');
+                    if (d.throttle.temp_limit_now) issues.push('Temperature limit active');
+                    if (d.throttle.under_voltage_now) issues.push('Under-voltage detected');
+                    if (d.throttle.freq_capped_now) issues.push('Frequency capped');
+                    if (issues.length) {
+                        alert.style.display = '';
+                        alert.className = 'status critical';
+                        alert.textContent = 'Throttle alert: ' + issues.join(', ');
+                    } else if (d.throttle.throttled_occurred || d.throttle.temp_limit_occurred) {
+                        alert.style.display = '';
+                        alert.className = 'status warning';
+                        alert.textContent = 'Throttling occurred since boot (not currently active)';
+                    } else {
+                        alert.style.display = 'none';
+                    }
+                } else {
+                    alert.style.display = 'none';
+                }
+            } catch (e) {
                 document.getElementById('status').textContent = 'Server unreachable';
-            });
+                document.getElementById('status').className = 'status critical';
+            }
+        }
+
+        loadHealth();
+        setInterval(loadHealth, 10000);
     </script>
 </body>
 </html>

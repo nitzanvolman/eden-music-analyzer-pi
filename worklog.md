@@ -63,3 +63,4 @@
 - [Task #20] ✅ (added integer validation for lines query param)
 - [Task #21] Created logs.html — log viewer page. Source selector (analyzer/web), line count selector (50-500), auto-refresh (5s toggle), color-coded lines (error=red, warn=gold, info=default). Smart auto-scroll (stays at bottom if user was already there). Status bar shows file info and update time. XSS-safe HTML escaping. Added Logs nav link to all pages.
 - [Task #21] ✅ (fixed XSS in error message display via shared esc() helper)
+- [Task #22] Added CPU temp monitoring + throttle alerts. Server: _read_throttle_status() parses vcgencmd get_throttled flags (under-voltage, freq capped, throttled, temp limit — both current and since-boot). /api/health now returns throttle object and temp_alert (warning at 70C, critical at 80C). Home page: dashboard with uptime, CPU temp (color-coded), load, memory %, disk %. Throttle alert banner shows active issues or past occurrences. Auto-refreshes every 10s.

@@ -57,6 +57,32 @@ def _read_cpu_temp() -> float | None:
     return None
 
 
+def _read_throttle_status() -> dict | None:
+    """Read Pi throttle status via vcgencmd. Returns None if unavailable."""
+    try:
+        result = subprocess.run(
+            ["vcgencmd", "get_throttled"], capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode == 0:
+            # Output: "throttled=0x50005" — parse the hex value
+            hex_str = result.stdout.strip().split("=")[-1]
+            flags = int(hex_str, 16)
+            return {
+                "raw": hex_str,
+                "under_voltage_now": bool(flags & 0x1),
+                "freq_capped_now": bool(flags & 0x2),
+                "throttled_now": bool(flags & 0x4),
+                "temp_limit_now": bool(flags & 0x8),
+                "under_voltage_occurred": bool(flags & 0x10000),
+                "freq_capped_occurred": bool(flags & 0x20000),
+                "throttled_occurred": bool(flags & 0x40000),
+                "temp_limit_occurred": bool(flags & 0x80000),
+            }
+    except (FileNotFoundError, subprocess.TimeoutExpired, ValueError, OSError):
+        pass
+    return None
+
+
 def _get_load_avg() -> list[float]:
     """Get system load averages (1, 5, 15 min)."""
     try:
@@ -101,6 +127,15 @@ async def api_health(request: web.Request) -> web.Response:
     cpu_temp = _read_cpu_temp()
     if cpu_temp is not None:
         data["cpu_temp_c"] = round(cpu_temp, 1)
+        # Temperature alerts
+        if cpu_temp >= 80:
+            data["temp_alert"] = "critical"
+        elif cpu_temp >= 70:
+            data["temp_alert"] = "warning"
+
+    throttle = _read_throttle_status()
+    if throttle is not None:
+        data["throttle"] = throttle
 
     return web.json_response(data)
 

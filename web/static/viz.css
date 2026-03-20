@@ -327,7 +327,7 @@ canvas {
 .pitch-card {
   position: relative;
   padding: 0;
-  min-height: 90px;
+  grid-row: span 3;
 }
 .pitch-card .card-label {
   position: absolute;

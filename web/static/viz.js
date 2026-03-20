@@ -12,8 +12,10 @@ function midiToOctave(midi) { return Math.floor(Math.round(midi) / 12) - 1; }
 const PITCH_HISTORY_LEN = 80;
 const pitchHistory = new Array(PITCH_HISTORY_LEN).fill(null);
 
-// Stable range for pitch ribbon (integer MIDI center, no float drift)
-let ribbonCenter = 60; // MIDI note center (C4 = 60)
+// Fixed pitch ribbon range — covers practical detection range (E1 to C7)
+const RIBBON_MIN_MIDI = 28;  // E1
+const RIBBON_MAX_MIDI = 96;  // C7
+const RIBBON_RANGE = RIBBON_MAX_MIDI - RIBBON_MIN_MIDI;
 
 // Raw OSC values for modal display (address → args array)
 const oscRaw = {};
@@ -307,23 +309,12 @@ function drawPitchRibbon() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
 
-  // Stable integer range: only re-center when most recent notes are outside
-  // the visible window. Single outliers (noise spikes) are ignored.
-  const recentNotes = pitchHistory.slice(-10).filter(n => n !== null);
-  if (recentNotes.length >= 3) {
-    const outsideCount = recentNotes.filter(n => n < ribbonCenter - 11 || n > ribbonCenter + 11).length;
-    if (outsideCount > recentNotes.length / 2) {
-      // Majority of recent notes are outside — re-center to their median
-      const sorted = recentNotes.slice().sort((a, b) => a - b);
-      ribbonCenter = sorted[Math.floor(sorted.length / 2)];
-    }
-  }
-  const minMidi = ribbonCenter - 12;
-  const maxMidi = ribbonCenter + 12;
-  const range = 24; // always exactly 2 octaves
+  // Fixed range — no re-centering, everything always visible
+  const minMidi = RIBBON_MIN_MIDI;
+  const maxMidi = RIBBON_MAX_MIDI;
+  const range = RIBBON_RANGE;
 
   // Draw piano key background
-  const keyH = h;
   for (let m = minMidi; m <= maxMidi; m++) {
     const note = m % 12;
     const isBlack = [1,3,6,8,10].includes(note);

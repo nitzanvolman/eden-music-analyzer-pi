@@ -15,8 +15,9 @@
 // - .kr = control rate (updates ~689 times/sec), .ar = audio rate (44100/sec)
 //
 // HOW TO TWEAK:
-// - To disable a feature: comment out its SendReply line AND its OSCdef block
-// - To change how often a feature is sent: change the Impulse.kr(N) rate
+// - All parameters are in config.env (see config_template.env for docs)
+// - To disable a feature: set SC_FEATURE_<name>=0 in config.env
+// - To change trigger rates: set SC_TRIG_RATE_FAST/MEDIUM/SLOW
 // - To change sensitivity: adjust threshold values (lower = more sensitive)
 // - To add a new feature: add a UGen + SendReply in the SynthDef, and an
 //   OSCdef forwarder below it

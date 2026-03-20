@@ -15,14 +15,14 @@ def tmp_sc_osc_dir(tmp_path):
     config_template.write_text(
         "# Template\n"
         "SC_OSC_DESTINATIONS=127.0.0.1:9000\n"
-        "# SC_ONSET_THRESHOLD=0.5\n"
+        "# SC_ONSET_KICK_THRESHOLD=0.3\n"
         "# SC_FFT_SIZE=2048\n"
     )
 
     config_file = tmp_path / "config.env"
     config_file.write_text(
         "SC_OSC_DESTINATIONS=127.0.0.1:9000\n"
-        "SC_ONSET_THRESHOLD=0.3\n"
+        "SC_ONSET_KICK_THRESHOLD=0.3\n"
     )
 
     logs_dir = tmp_path / "logs"

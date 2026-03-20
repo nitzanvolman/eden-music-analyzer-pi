@@ -324,10 +324,20 @@ canvas {
 }
 
 /* === PITCH RIBBON === */
+.harmony-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  height: 240px;
+}
+.harmony-row > .card {
+  min-height: 0;
+  height: 100%;
+}
 .pitch-card {
   position: relative;
   padding: 0;
-  grid-row: span 3;
 }
 .pitch-card .card-label {
   position: absolute;

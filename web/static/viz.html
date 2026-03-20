@@ -59,30 +59,32 @@
   <!-- ===== PITCH & HARMONY ===== -->
   <div class="section-group"><span class="section-group-label">Pitch &amp; Harmony</span><span class="section-group-line"></span></div>
 
-  <!-- Key -->
-  <div class="card" data-osc="/audio/key">
-    <div class="card-label">Key</div>
-    <div class="key-display">
-      <span class="key-note" id="keyNote">--</span>
-      <span class="key-mode" id="keyMode"></span>
+  <div class="harmony-row">
+    <!-- Key -->
+    <div class="card" data-osc="/audio/key">
+      <div class="card-label">Key</div>
+      <div class="key-display">
+        <span class="key-note" id="keyNote">--</span>
+        <span class="key-mode" id="keyMode"></span>
+      </div>
     </div>
-  </div>
 
-  <!-- Pitch -->
-  <div class="card pitch-card" data-osc="/audio/pitch">
-    <div class="card-label">Pitch</div>
-    <canvas id="pitchRibbon"></canvas>
-    <div class="pitch-overlay">
-      <span class="pitch-note" id="pitchNote">--</span>
-      <span class="pitch-octave" id="pitchOctave"></span>
-      <span class="pitch-hz" id="pitchHz"></span>
+    <!-- Pitch -->
+    <div class="card pitch-card" data-osc="/audio/pitch">
+      <div class="card-label">Pitch</div>
+      <canvas id="pitchRibbon"></canvas>
+      <div class="pitch-overlay">
+        <span class="pitch-note" id="pitchNote">--</span>
+        <span class="pitch-octave" id="pitchOctave"></span>
+        <span class="pitch-hz" id="pitchHz"></span>
+      </div>
     </div>
-  </div>
 
-  <!-- Chromagram -->
-  <div class="card" data-osc="/audio/chroma">
-    <div class="card-label">Chromagram</div>
-    <canvas id="chromaCanvas" height="64"></canvas>
+    <!-- Chromagram -->
+    <div class="card" data-osc="/audio/chroma">
+      <div class="card-label">Chromagram</div>
+      <canvas id="chromaCanvas" height="64"></canvas>
+    </div>
   </div>
 
   <!-- ===== DYNAMICS & TIMBRE ===== -->

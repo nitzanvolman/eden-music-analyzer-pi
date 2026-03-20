@@ -7,11 +7,14 @@ Uses aiohttp for async HTTP + WebSocket support.
 
 import os
 import time
+import json
 import asyncio
 import shutil
 import subprocess
 from pathlib import Path
 from aiohttp import web
+
+from web.osc_bridge import start_osc_server, register_ws, unregister_ws, get_latest
 
 # Default port, overridable via env var
 WEB_PORT = int(os.environ.get("SC_WEB_PORT", "8080"))
@@ -258,6 +261,43 @@ async def api_config_set(request: web.Request) -> web.Response:
     })
 
 
+async def api_osc_latest(request: web.Request) -> web.Response:
+    """GET /api/osc/latest — return latest value for every OSC address."""
+    return web.json_response(get_latest())
+
+
+async def ws_osc(request: web.Request) -> web.WebSocketResponse:
+    """WebSocket /ws/osc — stream live OSC data to the client."""
+    ws = web.WebSocketResponse()
+    await ws.prepare(request)
+
+    register_ws(ws)
+    try:
+        # Send current state snapshot on connect
+        for data in get_latest().values():
+            await ws.send_str(json.dumps(data))
+        # Keep connection alive until client disconnects
+        async for msg in ws:
+            pass  # We don't expect messages from the client
+    finally:
+        unregister_ws(ws)
+
+    return ws
+
+
+async def on_startup(app: web.Application) -> None:
+    """Start the OSC listener when the web server starts."""
+    loop = asyncio.get_event_loop()
+    app["osc_transport"] = await start_osc_server(loop)
+
+
+async def on_cleanup(app: web.Application) -> None:
+    """Clean up the OSC listener on shutdown."""
+    transport = app.get("osc_transport")
+    if transport:
+        transport.close()
+
+
 def create_app() -> web.Application:
     """Create and configure the aiohttp application."""
     app = web.Application()
@@ -269,10 +309,16 @@ def create_app() -> web.Application:
     app.router.add_post("/api/restart", api_restart)
     app.router.add_get("/api/config", api_config_get)
     app.router.add_post("/api/config", api_config_set)
+    app.router.add_get("/api/osc/latest", api_osc_latest)
+    app.router.add_get("/ws/osc", ws_osc)
 
     # Static file serving (if directory exists)
     if STATIC_DIR.exists():
         app.router.add_static("/static/", STATIC_DIR, name="static")
+
+    # Lifecycle hooks
+    app.on_startup.append(on_startup)
+    app.on_cleanup.append(on_cleanup)
 
     return app
 

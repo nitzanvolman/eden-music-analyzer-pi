@@ -69,14 +69,14 @@
   </div>
 
   <!-- Pitch -->
-  <div class="card" data-osc="/audio/pitch">
+  <div class="card pitch-card" data-osc="/audio/pitch">
     <div class="card-label">Pitch</div>
-    <div class="pitch-header">
+    <canvas id="pitchRibbon"></canvas>
+    <div class="pitch-overlay">
       <span class="pitch-note" id="pitchNote">--</span>
       <span class="pitch-octave" id="pitchOctave"></span>
       <span class="pitch-hz" id="pitchHz"></span>
     </div>
-    <canvas id="pitchRibbon" height="48"></canvas>
   </div>
 
   <!-- Chromagram -->

@@ -12,9 +12,8 @@ function midiToOctave(midi) { return Math.floor(Math.round(midi) / 12) - 1; }
 const PITCH_HISTORY_LEN = 80;
 const pitchHistory = new Array(PITCH_HISTORY_LEN).fill(null);
 
-// Stable range for pitch ribbon (avoids jitter from median recalculation)
+// Stable range for pitch ribbon (integer MIDI center, no float drift)
 let ribbonCenter = 60; // MIDI note center (C4 = 60)
-let ribbonCenterSmooth = 60; // smoothed version for rendering
 
 // Raw OSC values for modal display (address → args array)
 const oscRaw = {};
@@ -276,37 +275,36 @@ function sizeCanvases() {
   const dpr = window.devicePixelRatio || 1;
   ['pitchRibbon', 'chromaCanvas'].forEach(id => {
     const canvas = document.getElementById(id);
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
     const ctx = canvas.getContext('2d');
-    canvas.width = canvas.clientWidth * dpr;
-    canvas.height = canvas.clientHeight * dpr;
-    canvases[id] = { canvas, ctx, dpr };
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    canvases[id] = { canvas, ctx, dpr, w: rect.width, h: rect.height };
   });
 }
 window.addEventListener('resize', sizeCanvases);
 
 function drawPitchRibbon() {
-  const { canvas, ctx, dpr } = canvases.pitchRibbon || {};
-  if (!ctx) return;
+  const entry = canvases.pitchRibbon;
+  if (!entry || !entry.ctx) return;
+  const { canvas, ctx, dpr, w, h } = entry;
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const w = canvas.clientWidth;
-  const h = canvas.clientHeight;
   ctx.clearRect(0, 0, w, h);
 
-  // Stable range: only re-center when the latest note is outside the window.
-  // This prevents jitter from median recalculation on every frame.
+  // Stable integer range: only re-center when latest note is near the edge.
+  // Using integers prevents sub-pixel drift that causes visual jitter.
   const latest = pitchHistory[pitchHistory.length - 1];
   if (latest !== null) {
-    const margin = 10; // re-center when within 2 semitones of edge
+    const margin = 10;
     if (latest > ribbonCenter + margin || latest < ribbonCenter - margin) {
       ribbonCenter = Math.round(latest);
     }
   }
-  // Smooth the center transition to avoid sudden jumps
-  ribbonCenterSmooth = ribbonCenterSmooth + (ribbonCenter - ribbonCenterSmooth) * 0.08;
-  const minMidi = ribbonCenterSmooth - 12;
-  const maxMidi = ribbonCenterSmooth + 12;
-  const range = maxMidi - minMidi;
+  const minMidi = ribbonCenter - 12;
+  const maxMidi = ribbonCenter + 12;
+  const range = 24; // always exactly 2 octaves
 
   // Draw piano key background
   const keyH = h;

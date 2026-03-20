@@ -356,6 +356,12 @@ cp "$SCRIPT_DIR/analyzer.scd" "$SC_OSC_DIR/analyzer.scd"
 cp "$SCRIPT_DIR/hello.scd" "$SC_OSC_DIR/hello.scd"
 cp "$SCRIPT_DIR/autostart.sh" "$SC_OSC_DIR/autostart.sh"
 cp "$SCRIPT_DIR/test_receiver.py" "$SC_OSC_DIR/test_receiver.py"
+# Copy web server package (always, so updates are picked up)
+if [[ -d "$SCRIPT_DIR/web" ]]; then
+	rm -rf "$SC_OSC_DIR/web"
+	cp -r "$SCRIPT_DIR/web" "$SC_OSC_DIR/web"
+	echo "Copied web server to $SC_OSC_DIR/web"
+fi
 # Copy config_template.env (always, so new parameters are visible)
 cp "$SCRIPT_DIR/config_template.env" "$SC_OSC_DIR/config_template.env"
 # Only create config.env from template if it doesn't already exist (preserve user edits)
@@ -475,7 +481,7 @@ if [[ "$MAC_MODE" == true ]]; then
 	echo "  3. Run the analyzer:"
 	echo "     source $SC_OSC_DIR/config.env && $SCLANG_BIN $SC_OSC_DIR/analyzer.scd"
 	echo "  4. Start the web server:"
-	echo "     source $SC_OSC_DIR/.venv/bin/activate && python -m web.server"
+	echo "     source $SC_OSC_DIR/.venv/bin/activate && cd $SC_OSC_DIR && python -m web.server"
 	echo "  5. Verify OSC output:"
 	echo "     oscdump 9000"
 else

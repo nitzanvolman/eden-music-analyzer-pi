@@ -348,8 +348,8 @@ s.waitForBoot({
 		// ====================================================================
 		// FEATURE: Chromagram (pitch class energy)
 		// ====================================================================
-		if(featChroma, {
-			chroma = Chromagram.kr(chain, cfgFFTSize);
+		if(featChroma and: { 'Chromagram'.asClass.notNil }, {
+			chroma = 'Chromagram'.asClass.kr(chain, cfgFFTSize);
 			SendReply.kr(trigMedium, '/tr_chroma', chroma);
 		});
 

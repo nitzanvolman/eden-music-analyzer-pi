@@ -102,7 +102,7 @@ installed), how to tune, and Output Reference (what the reciever of the OSC mess
 
 Each task: write tests first (they should fail), then make them pass. Use pytest + aiohttp test client. Add pytest + pytest-aiohttp to requirements.txt in Task 23.
 
-23. [⚪] - Test setup: add pytest + pytest-aiohttp to requirements.txt, create tests/ directory with conftest.py (aiohttp test client fixture, temp config files, mock SC_OSC_DIR).
+23. [🟠] - Test setup: add pytest + pytest-aiohttp to requirements.txt, create tests/ directory with conftest.py (aiohttp test client fixture, temp config files, mock SC_OSC_DIR).
 24. [⚪] - Test: GET /api/ping returns {"status": "ok"} with 200.
 25. [⚪] - Test: GET /api/health returns uptime_seconds (> 0), status "ok", load_avg (list), memory (dict), disk (dict). Verify cpu_temp_c is a float or absent. Verify temp_alert is "warning"/"critical"/absent based on thresholds.
 26. [⚪] - Test: GET /api/config returns config and defaults dicts. POST /api/config with valid SC_ keys writes to config.env and returns updated keys. POST with non-SC_ keys returns 400. POST with newline in value returns 400. POST with invalid JSON returns 400.

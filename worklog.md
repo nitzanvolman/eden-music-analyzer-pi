@@ -21,3 +21,4 @@
 - [Task #5] Added multi-destination OSC support. New SC_OSC_DESTINATIONS env var accepts comma-separated ip:port pairs. Falls back to legacy SC_OSC_DEST_IP/SC_OSC_DEST_PORT if not set. All OSCdef forwarders now iterate over the dests array (broadcast pattern). Updated config_template.env, README, and analyzer.scd.
 - [Task #5] ✅
 - [Task #4] ❌ - Re-review against SC API docs found: (1) onset algorithm options missing `complex` and `magsum`, (2) KeyTrack requires FFT size 4096 but no warning in config template. Fixed both issues.
+- [Task #4] ✅

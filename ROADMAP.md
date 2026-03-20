@@ -73,7 +73,7 @@ This iteration is done. the next task will be done by the next iteration.
 2. [🟢] - Create the initial implementation.
 3. [🟢] - Split the @README.md into 3 files INSTALL.md, TROUBLESHOOTING.md, the main README should refer to these new files, but focus on how to run (when already
 installed), how to tune, and Output Reference (what the reciever of the OSC messages needs)
-4. [🔵] - Create config_template.env with all *new* tweakable parameters from analyzer.scd (onset threshold and OSC dest IP/port are already externalized): audio input channel, FFT buffer size, amplitude attack/release times, pitch min/max frequency, onset detection algorithm, MFCC coefficient count, key decay time, beat tracker lock mode, and trigger rates for fast/medium/slow features.
+4. [🟢] - Create config_template.env with all *new* tweakable parameters from analyzer.scd (onset threshold and OSC dest IP/port are already externalized): audio input channel, FFT buffer size, amplitude attack/release times, pitch min/max frequency, onset detection algorithm, MFCC coefficient count, key decay time, beat tracker lock mode, and trigger rates for fast/medium/slow features.
 5. [🔵] - Configuration supports sending OSC to multiple destination IPs. (Do this before or alongside Task 6 to avoid rework.)
 6. [🟠] - Update analyzer.scd to read all config values from environment variables (with current hardcoded values as defaults).
 7. [⚪] - Add config.env to .gitignore; update install script to copy config_template.env → config.env if not present.

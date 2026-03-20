@@ -78,7 +78,7 @@ installed), how to tune, and Output Reference (what the reciever of the OSC mess
 6. [🟢] - Update analyzer.scd to read all config values from environment variables (with current hardcoded values as defaults).
 7. [🟢] - Add config.env to .gitignore; update install script to copy config_template.env → config.env if not present.
 8. [🟢] - Add OSC test mode as a mode within analyzer.scd: when enabled, bypass audio input and send synthetic OSC messages on all channels (for testing receivers without audio).
-9. [🔵] - Install script creates a Python (3.12+) virtual environment.
+9. [🟢] - Install script creates a Python (3.12+) virtual environment.
 10. [⚪] - Configuration allows toggling individual analysis features on/off to conserve CPU (gate SendReply triggers per feature).
 11. [⚪] - Configuration can toggle OSC test mode on/off.
 12. [⚪] - Web interface: Python web server setup. Design assuming WiFi drops frequently (art car conditions).

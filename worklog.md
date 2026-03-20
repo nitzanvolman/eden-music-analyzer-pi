@@ -30,3 +30,4 @@
 - [Task #8] Added OSC test mode (SC_TEST_MODE=1). When enabled, bypasses scsynth entirely and runs sclang-side Routines that send synthetic plausible data on all OSC channels: amplitude, pitch, loudness, centroid, flatness (fast rate), MFCC and chroma (medium rate), key (slow rate), beat/BPM (simulated ~120 BPM with drift), and onset (random). Added SC_TEST_MODE to config_template.env.
 - [Task #8] ✅ (removed unused phase/beatPhase vars)
 - [Task #9] Added Python venv creation to install.sh. Searches for Python 3.12+ (tries python3.13, python3.12, python3 with version check). Creates venv at ~/sc-osc/.venv if not present. Upgrades pip and installs requirements.txt if it exists. Warns gracefully if Python 3.12+ not found.
+- [Task #9] ✅

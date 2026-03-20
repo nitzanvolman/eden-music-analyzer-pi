@@ -299,6 +299,31 @@ canvas {
   0% { top: -2px; }
   100% { top: 100vh; }
 }
+
+/* === PITCH RIBBON === */
+.pitch-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
+}
+.pitch-note {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2rem;
+  font-weight: 900;
+  color: #fff;
+}
+.pitch-octave {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--cyan);
+}
+.pitch-hz {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  margin-left: auto;
+}
 </style>
 </head>
 <body>
@@ -348,10 +373,14 @@ canvas {
   </div>
 
   <!-- Pitch -->
-  <div class="card">
+  <div class="card wide">
     <div class="card-label">Pitch</div>
-    <div class="card-value" id="pitchVal">--- Hz</div>
-    <div class="card-sub" id="pitchConf">confidence: --</div>
+    <div class="pitch-header">
+      <span class="pitch-note" id="pitchNote">--</span>
+      <span class="pitch-octave" id="pitchOctave"></span>
+      <span class="pitch-hz" id="pitchHz"></span>
+    </div>
+    <canvas id="pitchRibbon" height="60"></canvas>
   </div>
 
   <!-- Loudness -->
@@ -413,6 +442,15 @@ canvas {
 // ============================================================
 const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 
+// Convert Hz to MIDI note number (69 = A4 = 440Hz)
+function hzToMidi(hz) { return 12 * Math.log2(hz / 440) + 69; }
+function midiToNote(midi) { return NOTE_NAMES[Math.round(midi) % 12]; }
+function midiToOctave(midi) { return Math.floor(Math.round(midi) / 12) - 1; }
+
+// Pitch history ring buffer (stores MIDI note numbers, null = no pitch)
+const PITCH_HISTORY_LEN = 80;
+const pitchHistory = new Array(PITCH_HISTORY_LEN).fill(null);
+
 const state = {
   amp: 0, pitch: 0, hasFreq: 0, loud: 0,
   centroid: 0, flatness: 0, bpm: 0,
@@ -465,6 +503,13 @@ function handleOSC(addr, args) {
     case '/audio/pitch':
       state.pitch = args[0];
       state.hasFreq = args[1];
+      // Record to history if confident
+      if (args[1] > 0.5 && args[0] > 20) {
+        pitchHistory.push(hzToMidi(args[0]));
+      } else {
+        pitchHistory.push(null);
+      }
+      if (pitchHistory.length > PITCH_HISTORY_LEN) pitchHistory.shift();
       break;
     case '/audio/loudness':
       state.loud = args[0];
@@ -543,12 +588,15 @@ function updateDOM() {
   document.getElementById('ampBar').style.width = (smooth.amp * 100) + '%';
 
   // Pitch
-  if (state.hasFreq > 0.5) {
-    document.getElementById('pitchVal').textContent = Math.round(state.pitch) + ' Hz';
-    document.getElementById('pitchConf').textContent = 'confidence: ' + (state.hasFreq * 100).toFixed(0) + '%';
+  if (state.hasFreq > 0.5 && state.pitch > 20) {
+    const midi = hzToMidi(state.pitch);
+    document.getElementById('pitchNote').textContent = midiToNote(midi);
+    document.getElementById('pitchOctave').textContent = midiToOctave(midi);
+    document.getElementById('pitchHz').textContent = Math.round(state.pitch) + ' Hz';
   } else {
-    document.getElementById('pitchVal').textContent = '--- Hz';
-    document.getElementById('pitchConf').textContent = 'confidence: low';
+    document.getElementById('pitchNote').textContent = '--';
+    document.getElementById('pitchOctave').textContent = '';
+    document.getElementById('pitchHz').textContent = '';
   }
 
   // Loudness
@@ -582,7 +630,7 @@ const canvases = {};
 
 function sizeCanvases() {
   const dpr = window.devicePixelRatio || 1;
-  ['chromaCanvas', 'mfccCanvas'].forEach(id => {
+  ['pitchRibbon', 'chromaCanvas', 'mfccCanvas'].forEach(id => {
     const canvas = document.getElementById(id);
     const ctx = canvas.getContext('2d');
     canvas.width = canvas.clientWidth * dpr;
@@ -591,6 +639,80 @@ function sizeCanvases() {
   });
 }
 window.addEventListener('resize', sizeCanvases);
+
+function drawPitchRibbon() {
+  const { canvas, ctx, dpr } = canvases.pitchRibbon || {};
+  if (!ctx) return;
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  ctx.clearRect(0, 0, w, h);
+
+  // Find range from history (default 2 octaves around middle C if no data)
+  const validNotes = pitchHistory.filter(n => n !== null);
+  let minMidi, maxMidi;
+  if (validNotes.length > 0) {
+    const median = validNotes.slice().sort((a,b) => a-b)[Math.floor(validNotes.length/2)];
+    minMidi = Math.floor(median - 12);  // 1 octave below
+    maxMidi = Math.ceil(median + 12);   // 1 octave above
+  } else {
+    minMidi = 48; maxMidi = 72; // C3 to C5
+  }
+  const range = maxMidi - minMidi;
+
+  // Draw piano key background
+  const keyH = h;
+  for (let m = minMidi; m <= maxMidi; m++) {
+    const note = m % 12;
+    const isBlack = [1,3,6,8,10].includes(note);
+    const y = h - ((m - minMidi) / range) * h;
+    const yNext = h - ((m + 1 - minMidi) / range) * h;
+    const keyHeight = y - yNext;
+
+    ctx.fillStyle = isBlack ? 'rgba(20,20,40,0.6)' : 'rgba(30,30,60,0.3)';
+    ctx.fillRect(0, yNext, w, keyHeight);
+
+    // Subtle grid line between keys
+    ctx.strokeStyle = 'rgba(80,80,120,0.15)';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+
+    // Label C notes on the left edge
+    if (note === 0) {
+      ctx.fillStyle = 'rgba(200,200,220,0.3)';
+      ctx.font = '500 8px "JetBrains Mono"';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('C' + (Math.floor(m/12)-1), 2, yNext + keyHeight/2);
+    }
+  }
+
+  // Draw pitch history as dots scrolling left
+  const colW = w / PITCH_HISTORY_LEN;
+  for (let i = 0; i < pitchHistory.length; i++) {
+    const midi = pitchHistory[i];
+    if (midi === null) continue;
+
+    const x = i * colW + colW / 2;
+    const y = h - ((midi - minMidi) / range) * h;
+    const age = (i / pitchHistory.length); // 0=oldest, 1=newest
+    const r = 3 + age * 3;
+
+    // Note dot with glow
+    const hue = (Math.round(midi) % 12) / 12 * 300;
+    ctx.fillStyle = `hsla(${hue}, 80%, 60%, ${0.2 + age * 0.8})`;
+    ctx.shadowColor = `hsla(${hue}, 90%, 55%, ${age * 0.6})`;
+    ctx.shadowBlur = age * 8;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+}
 
 function drawChroma() {
   const { canvas, ctx, dpr } = canvases.chromaCanvas || {};
@@ -691,6 +813,7 @@ function frame() {
     drawPublicView();
   } else {
     updateDOM();
+    drawPitchRibbon();
     drawChroma();
     drawMFCC();
   }

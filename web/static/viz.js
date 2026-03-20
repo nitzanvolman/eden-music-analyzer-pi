@@ -289,14 +289,18 @@ function sizeCanvases() {
     canvases.pitchRibbon = { canvas: pitchCanvas, ctx: pitchCanvas.getContext('2d'), dpr, w: pw, h: ph };
   }
 
-  // Chroma canvas: sized from its rendered bounding rect.
-  // Must set explicit CSS width/height to prevent intrinsic pixel buffer
-  // size from overriding the flex-allocated size.
+  // Chroma canvas: compute available space from parent card minus label
   const chromaCanvas = document.getElementById('chromaCanvas');
   if (chromaCanvas) {
-    const rect = chromaCanvas.getBoundingClientRect();
-    const cw = rect.width;
-    const ch = rect.height;
+    const card = chromaCanvas.closest('.chroma-card');
+    const label = card.querySelector('.card-label');
+    const cardStyle = getComputedStyle(card);
+    const padTop = parseFloat(cardStyle.paddingTop);
+    const padBottom = parseFloat(cardStyle.paddingBottom);
+    const padLeft = parseFloat(cardStyle.paddingLeft);
+    const padRight = parseFloat(cardStyle.paddingRight);
+    const cw = card.clientWidth - padLeft - padRight;
+    const ch = card.clientHeight - padTop - padBottom - label.offsetHeight;
     const ctx = chromaCanvas.getContext('2d');
     chromaCanvas.style.width = cw + 'px';
     chromaCanvas.style.height = ch + 'px';

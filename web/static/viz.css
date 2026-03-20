@@ -344,8 +344,14 @@ canvas {
   height: 100%;
 }
 .chroma-card {
-  display: flex;
-  flex-direction: column;
+  position: relative;
+}
+.chroma-card .card-label {
+  position: relative;
+  z-index: 1;
+}
+.chroma-card canvas {
+  display: block;
 }
 .pitch-card {
   position: relative;

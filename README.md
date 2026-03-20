@@ -16,8 +16,9 @@ SC_OSC_DESTINATIONS=192.168.1.100:9000
 # Multiple destinations example:
 # SC_OSC_DESTINATIONS=192.168.1.100:9000,192.168.1.200:9000,10.0.0.5:7000
 
-# Onset detection threshold (0.0 - 1.0, lower = more sensitive)
-# SC_ONSET_THRESHOLD=0.5
+# Onset suite — per-channel enable/disable and thresholds
+# SC_ONSET_KICK=1
+# SC_ONSET_KICK_THRESHOLD=0.3
 ```
 
 This file is sourced by `autostart.sh`, the systemd service, and can be sourced manually before running. The install script preserves your edits on re-run.
@@ -64,7 +65,16 @@ All messages are sent to the configured destinations (default `127.0.0.1:9000`).
 |----------------------------|---------------|---------|--------------------------------------|
 | `/audio/amplitude`         | `f`           | 30 Hz   | RMS amplitude, 0.0 -- 1.0           |
 | `/audio/pitch`             | `ff`          | 30 Hz   | Frequency (Hz), hasFreq (0.0--1.0)  |
-| `/audio/onset`             | `i`           | trigger | 1 on each detected onset             |
+| `/audio/onset/kick`        | `i`           | trigger | Kick drum (LPF 100 Hz, mkl)          |
+| `/audio/onset/snare`       | `i`           | trigger | Snare, claps (BPF 200–2000 Hz, mkl)  |
+| `/audio/onset/hihat`       | `i`           | trigger | Hi-hats, cymbals (HPF 5000 Hz, mkl)  |
+| `/audio/onset/perc`        | `i`           | trigger | Any percussive hit (full, mkl)        |
+| `/audio/onset/bass`        | `i`           | trigger | Bass note changes (LPF 200 Hz, phase) |
+| `/audio/onset/melody`      | `i`           | trigger | Melodic note changes (BPF 300–4k, phase)|
+| `/audio/onset/bright`      | `i`           | trigger | High-pitched changes (HPF 3k, phase)  |
+| `/audio/onset/any`         | `i`           | trigger | Catch-all onset (full, rcomplex)      |
+| `/audio/onset/drop`        | `i`           | trigger | Big energy spikes (full, power)       |
+| `/audio/onset/soft`        | `i`           | trigger | Only obvious onsets (full, rcomplex)  |
 | `/audio/loudness`          | `f`           | 30 Hz   | Loudness in sones (0--64+)           |
 | `/audio/spectral/centroid` | `f`           | 30 Hz   | Spectral centroid (Hz, 200--8000)    |
 | `/audio/spectral/flatness` | `f`           | 30 Hz   | Spectral flatness, 0.0 -- 1.0       |
@@ -86,7 +96,7 @@ All messages are sent to the configured destinations (default `127.0.0.1:9000`).
 
 **Spectral Flatness** — How noise-like vs tone-like the sound is. 0.0 = pure tone (flute), 1.0 = noise (static). Drums/percussion score higher than melodic instruments.
 
-**Onset Detection** — Triggers on note/drum hits. Configurable threshold (`SC_ONSET_THRESHOLD`, lower = more sensitive) and algorithm (`SC_ONSET_ALGORITHM`: rcomplex, complex, phase, wphase, mkl, magsum, power).
+**Onset Detection Suite** — Ten parallel onset detectors, each tuned for a distinct musical event. Percussive channels (kick, snare, hihat, perc) use the mkl algorithm with frequency band filtering. Melodic channels (bass, melody, bright) use phase detection. General channels (any, drop, soft) cover catch-all and energy-based detection. Each channel has its own enable toggle (`SC_ONSET_{NAME}`) and threshold (`SC_ONSET_{NAME}_THRESHOLD`). Master toggle: `SC_FEATURE_ONSET_SUITE`.
 
 **MFCC** — Timbre fingerprint. Compact representation of the sound's texture. Coefficient 0 = energy, 1--5 = broad spectral shape, higher = finer detail. Count configurable (`SC_MFCC_NUM_COEFF`, default 13, max 42).
 

@@ -354,6 +354,28 @@ canvas {
   color: var(--text-dim);
   margin-left: auto;
 }
+
+/* === SECTION GROUPS === */
+.section-group {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+.section-group-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.55rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.section-group-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--dim), transparent);
+}
 </style>
 </head>
 <body>
@@ -379,12 +401,35 @@ canvas {
 
 <div class="grid" id="expertGrid">
 
+  <!-- ===== RHYTHM & TIMING ===== -->
+  <div class="section-group"><span class="section-group-label">Rhythm &amp; Timing</span><span class="section-group-line"></span></div>
+
   <!-- BPM + Beat -->
   <div class="card beat-card" id="beatCard">
     <div class="card-label">Tempo</div>
     <div class="card-value" id="bpmVal">---</div>
     <div class="card-sub">BPM</div>
   </div>
+
+  <!-- Onset Suite -->
+  <div class="card wide">
+    <div class="card-label">Onsets</div>
+    <div class="onset-grid">
+      <div class="onset-pip perc-type" id="onset-kick"><div class="onset-dot"></div><div class="onset-label">Kick</div></div>
+      <div class="onset-pip perc-type" id="onset-snare"><div class="onset-dot"></div><div class="onset-label">Snare</div></div>
+      <div class="onset-pip perc-type" id="onset-hihat"><div class="onset-dot"></div><div class="onset-label">HiHat</div></div>
+      <div class="onset-pip perc-type" id="onset-perc"><div class="onset-dot"></div><div class="onset-label">Perc</div></div>
+      <div class="onset-pip melody-type" id="onset-bass"><div class="onset-dot"></div><div class="onset-label">Bass</div></div>
+      <div class="onset-pip melody-type" id="onset-melody"><div class="onset-dot"></div><div class="onset-label">Melody</div></div>
+      <div class="onset-pip melody-type" id="onset-bright"><div class="onset-dot"></div><div class="onset-label">Bright</div></div>
+      <div class="onset-pip general-type" id="onset-any"><div class="onset-dot"></div><div class="onset-label">Any</div></div>
+      <div class="onset-pip general-type" id="onset-drop"><div class="onset-dot"></div><div class="onset-label">Drop</div></div>
+      <div class="onset-pip general-type" id="onset-soft"><div class="onset-dot"></div><div class="onset-label">Soft</div></div>
+    </div>
+  </div>
+
+  <!-- ===== PITCH & HARMONY ===== -->
+  <div class="section-group"><span class="section-group-label">Pitch &amp; Harmony</span><span class="section-group-line"></span></div>
 
   <!-- Key -->
   <div class="card">
@@ -393,13 +438,6 @@ canvas {
       <span class="key-note" id="keyNote">--</span>
       <span class="key-mode" id="keyMode"></span>
     </div>
-  </div>
-
-  <!-- Amplitude -->
-  <div class="card">
-    <div class="card-label">Amplitude</div>
-    <div class="card-value" id="ampVal">0.00</div>
-    <div class="meter"><div class="meter-fill amp" id="ampBar" style="width:0%"></div></div>
   </div>
 
   <!-- Pitch -->
@@ -411,6 +449,22 @@ canvas {
       <span class="pitch-hz" id="pitchHz"></span>
     </div>
     <canvas id="pitchRibbon" height="60"></canvas>
+  </div>
+
+  <!-- Chromagram -->
+  <div class="card wide">
+    <div class="card-label">Chromagram</div>
+    <canvas id="chromaCanvas" height="100"></canvas>
+  </div>
+
+  <!-- ===== DYNAMICS & TIMBRE ===== -->
+  <div class="section-group"><span class="section-group-label">Dynamics &amp; Timbre</span><span class="section-group-line"></span></div>
+
+  <!-- Amplitude -->
+  <div class="card">
+    <div class="card-label">Amplitude</div>
+    <div class="card-value" id="ampVal">0.00</div>
+    <div class="meter"><div class="meter-fill amp" id="ampBar" style="width:0%"></div></div>
   </div>
 
   <!-- Loudness -->
@@ -436,30 +490,6 @@ canvas {
     <div class="card-value" id="flatVal">0.00</div>
     <div class="meter"><div class="meter-fill noise" id="flatBar" style="width:0%"></div></div>
   </div>
-
-  <!-- Onset Suite -->
-  <div class="card wide">
-    <div class="card-label">Onsets</div>
-    <div class="onset-grid">
-      <div class="onset-pip perc-type" id="onset-kick"><div class="onset-dot"></div><div class="onset-label">Kick</div></div>
-      <div class="onset-pip perc-type" id="onset-snare"><div class="onset-dot"></div><div class="onset-label">Snare</div></div>
-      <div class="onset-pip perc-type" id="onset-hihat"><div class="onset-dot"></div><div class="onset-label">HiHat</div></div>
-      <div class="onset-pip perc-type" id="onset-perc"><div class="onset-dot"></div><div class="onset-label">Perc</div></div>
-      <div class="onset-pip melody-type" id="onset-bass"><div class="onset-dot"></div><div class="onset-label">Bass</div></div>
-      <div class="onset-pip melody-type" id="onset-melody"><div class="onset-dot"></div><div class="onset-label">Melody</div></div>
-      <div class="onset-pip melody-type" id="onset-bright"><div class="onset-dot"></div><div class="onset-label">Bright</div></div>
-      <div class="onset-pip general-type" id="onset-any"><div class="onset-dot"></div><div class="onset-label">Any</div></div>
-      <div class="onset-pip general-type" id="onset-drop"><div class="onset-dot"></div><div class="onset-label">Drop</div></div>
-      <div class="onset-pip general-type" id="onset-soft"><div class="onset-dot"></div><div class="onset-label">Soft</div></div>
-    </div>
-  </div>
-
-  <!-- Chromagram -->
-  <div class="card wide">
-    <div class="card-label">Chromagram</div>
-    <canvas id="chromaCanvas" height="100"></canvas>
-  </div>
-
 
 </div>
 

@@ -299,12 +299,14 @@ cp "$SCRIPT_DIR/analyzer.scd" "$SC_OSC_DIR/analyzer.scd"
 cp "$SCRIPT_DIR/hello.scd" "$SC_OSC_DIR/hello.scd"
 cp "$SCRIPT_DIR/autostart.sh" "$SC_OSC_DIR/autostart.sh"
 cp "$SCRIPT_DIR/test_receiver.py" "$SC_OSC_DIR/test_receiver.py"
-# Only copy config.env if it doesn't already exist (preserve user edits)
+# Copy config_template.env (always, so new parameters are visible)
+cp "$SCRIPT_DIR/config_template.env" "$SC_OSC_DIR/config_template.env"
+# Only create config.env from template if it doesn't already exist (preserve user edits)
 if [[ ! -f "$SC_OSC_DIR/config.env" ]]; then
-	cp "$SCRIPT_DIR/config.env" "$SC_OSC_DIR/config.env"
-	echo "Created config.env — edit to set OSC destination, audio device, etc."
+	cp "$SCRIPT_DIR/config_template.env" "$SC_OSC_DIR/config.env"
+	echo "Created config.env from template — edit to set OSC destination, audio device, etc."
 else
-	echo "config.env already exists, not overwriting."
+	echo "config.env already exists, not overwriting. Check config_template.env for new parameters."
 fi
 chmod +x "$SC_OSC_DIR/autostart.sh"
 chmod +x "$SC_OSC_DIR/test_receiver.py"

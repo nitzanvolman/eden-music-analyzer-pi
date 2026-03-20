@@ -25,3 +25,4 @@
 - [Task #5] ✅ (re-review with SC API docs — used .ip instead of undocumented .hostname on NetAddr)
 - [Task #6] Wired all 14 config parameters from env vars into analyzer.scd as closure-captured constants (per SC API: these become compile-time constants in the SynthDef). Replaced all hardcoded values: input channel, FFT size, amplitude attack/release, pitch min/max freq, onset threshold+algorithm, MFCC count, key decay, beat lock, trigger rates. Chromagram now shares cfgFFTSize with LocalBuf. MFCC forwarder made dynamic to handle variable coefficient count via array slicing.
 - [Task #6] ✅
+- [Task #7] Added config.env to .gitignore and removed it from git tracking. Updated install.sh to copy config_template.env → config.env (if not present) and always copy config_template.env so users can see new parameters.

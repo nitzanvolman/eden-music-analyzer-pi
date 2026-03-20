@@ -26,20 +26,24 @@
 // In SC, everything between ( ) is executed as one block.
 // "var" declares local variables — SC requires all vars at the top of their scope.
 var destStr, dests;
+var cfgInputChan, cfgFFTSize, cfgAmpAttack, cfgAmpRelease;
+var cfgPitchMinFreq, cfgPitchMaxFreq, cfgOnsetThresh, cfgOnsetAlgo;
+var cfgMFCCCount, cfgKeyDecay, cfgBeatLock;
+var cfgTrigFast, cfgTrigMedium, cfgTrigSlow;
 
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
-// Read OSC destinations from environment variables (set in config.env).
-//
+// All parameters are read from environment variables (set in config.env).
+// The "?" operator means "if nil (not set), use this default instead."
+// These values are captured as constants when the SynthDef compiles —
+// changing config.env requires restarting the analyzer.
+// See config_template.env for documentation of each parameter.
+
+// --- OSC destinations ---
 // SC_OSC_DESTINATIONS: comma-separated ip:port pairs (preferred).
 //   Example: "127.0.0.1:9000,192.168.1.50:9000"
-//
 // Falls back to legacy SC_OSC_DEST_IP / SC_OSC_DEST_PORT if not set.
-//
-// dests = an Array of NetAddr objects. All OSC messages are sent to every
-// destination in this array (broadcast pattern).
-
 destStr = "SC_OSC_DESTINATIONS".getenv;
 
 if(destStr.notNil and: { destStr.size > 0 }, {
@@ -56,6 +60,22 @@ if(destStr.notNil and: { destStr.size > 0 }, {
 	var destPort = ("SC_OSC_DEST_PORT".getenv ? "9000").asInteger;
 	dests = [NetAddr(destIP, destPort)];
 });
+
+// --- Analysis parameters (from env vars, with defaults matching original hardcoded values) ---
+cfgInputChan   = ("SC_AUDIO_INPUT_CHANNEL".getenv ? "0").asInteger;
+cfgFFTSize     = ("SC_FFT_SIZE".getenv ? "2048").asInteger;
+cfgAmpAttack   = ("SC_AMP_ATTACK_TIME".getenv ? "0.01").asFloat;
+cfgAmpRelease  = ("SC_AMP_RELEASE_TIME".getenv ? "0.1").asFloat;
+cfgPitchMinFreq = ("SC_PITCH_MIN_FREQ".getenv ? "50").asFloat;
+cfgPitchMaxFreq = ("SC_PITCH_MAX_FREQ".getenv ? "4000").asFloat;
+cfgOnsetThresh = ("SC_ONSET_THRESHOLD".getenv ? "0.5").asFloat;
+cfgOnsetAlgo   = ("SC_ONSET_ALGORITHM".getenv ? "rcomplex").asSymbol;
+cfgMFCCCount   = ("SC_MFCC_NUM_COEFF".getenv ? "13").asInteger;
+cfgKeyDecay    = ("SC_KEY_DECAY_TIME".getenv ? "2.0").asFloat;
+cfgBeatLock    = ("SC_BEAT_LOCK".getenv ? "0").asInteger;
+cfgTrigFast    = ("SC_TRIG_RATE_FAST".getenv ? "30").asFloat;
+cfgTrigMedium  = ("SC_TRIG_RATE_MEDIUM".getenv ? "10").asFloat;
+cfgTrigSlow    = ("SC_TRIG_RATE_SLOW".getenv ? "2").asFloat;
 
 // --- Startup banner (printed to console / log) ---
 "==============================================".postln;
@@ -95,13 +115,13 @@ s.waitForBoot({
 		var mfcc, keyRaw, bt2, beatTrig, bpm;
 		var chroma;
 
-		// --- Trigger clocks ---
+		// --- Trigger clocks (rates from config) ---
 		// Impulse.kr(N) produces a trigger N times per second.
 		// We use these to control how often each feature is sent via OSC.
 		// Higher rate = more responsive but more network traffic & CPU.
-		var trig30 = Impulse.kr(30);  // 30 Hz — for fast-moving features
-		var trig10 = Impulse.kr(10);  // 10 Hz — for medium features (MFCC, chroma)
-		var trig2  = Impulse.kr(2);   //  2 Hz — for slow features (key detection)
+		var trigFast   = Impulse.kr(cfgTrigFast);   // fast-moving features
+		var trigMedium = Impulse.kr(cfgTrigMedium); // medium features (MFCC, chroma)
+		var trigSlow   = Impulse.kr(cfgTrigSlow);   // slow features (key detection)
 
 		// ====================================================================
 		// AUDIO INPUT
@@ -109,7 +129,7 @@ s.waitForBoot({
 		// SoundIn.ar(0) reads from the first audio input channel.
 		// Change 0 to 1 for the second channel, etc.
 		// The audio device is configured via JACK (~/.jackdrc).
-		sig = SoundIn.ar(0);
+		sig = SoundIn.ar(cfgInputChan);
 
 		// ====================================================================
 		// FFT (Fast Fourier Transform)
@@ -123,7 +143,7 @@ s.waitForBoot({
 		//
 		// TWEAK: Change 2048 to 1024 for lower latency (but worse bass resolution)
 		//        or 4096 for better frequency detail (but more latency).
-		chain = FFT(LocalBuf(2048), sig);
+		chain = FFT(LocalBuf(cfgFFTSize), sig);
 
 		// ====================================================================
 		// FEATURE: Amplitude (volume level)
@@ -134,13 +154,13 @@ s.waitForBoot({
 		// Output: 0.0 (silence) to ~1.0 (full scale)
 		//
 		// TWEAK: Increase attackTime for smoother response, decrease for snappier
-		amp = Amplitude.kr(sig, 0.01, 0.1);  // args: input, attackTime, releaseTime
+		amp = Amplitude.kr(sig, cfgAmpAttack, cfgAmpRelease);
 
 		// SendReply sends data from scsynth (audio server) back to sclang (client).
 		// trig30 = send 30 times per second
 		// '/tr_amp' = internal message name (matched by OSCdef below)
 		// [amp] = the data to send (wrapped in array)
-		SendReply.kr(trig30, '/tr_amp', [amp]);
+		SendReply.kr(trigFast, '/tr_amp', [amp]);
 
 		// ====================================================================
 		// FEATURE: Pitch detection
@@ -157,8 +177,8 @@ s.waitForBoot({
 		//        For vocals only, narrow to 80-1000.
 		// Pitch.kr args: input, initFreq, minFreq, maxFreq, ...
 		// We set initFreq to default (440), minFreq=50, maxFreq=4000
-		# freq, hasFreq = Pitch.kr(sig, 440, 50, 4000);
-		SendReply.kr(trig30, '/tr_pitch', [freq, hasFreq]);
+		# freq, hasFreq = Pitch.kr(sig, 440, cfgPitchMinFreq, cfgPitchMaxFreq);
+		SendReply.kr(trigFast, '/tr_pitch', [freq, hasFreq]);
 
 		// ====================================================================
 		// FEATURE: Loudness (perceptual)
@@ -169,7 +189,7 @@ s.waitForBoot({
 		// Requires an FFT chain as input.
 		// Output: 0 (silence) to ~64+ (very loud)
 		loud = Loudness.kr(chain);
-		SendReply.kr(trig30, '/tr_loudness', [loud]);
+		SendReply.kr(trigFast, '/tr_loudness', [loud]);
 
 		// ====================================================================
 		// FEATURE: Spectral Centroid ("brightness")
@@ -180,7 +200,7 @@ s.waitForBoot({
 		//
 		// USE CASE: Map to color temperature — low=warm/red, high=cool/blue
 		centroid = SpecCentroid.kr(chain);
-		SendReply.kr(trig30, '/tr_centroid', [centroid]);
+		SendReply.kr(trigFast, '/tr_centroid', [centroid]);
 
 		// ====================================================================
 		// FEATURE: Spectral Flatness ("noisiness")
@@ -191,7 +211,7 @@ s.waitForBoot({
 		//
 		// USE CASE: Distinguish between rhythmic and melodic sections
 		flatness = SpecFlatness.kr(chain);
-		SendReply.kr(trig30, '/tr_flatness', [flatness]);
+		SendReply.kr(trigFast, '/tr_flatness', [flatness]);
 
 		// ====================================================================
 		// FEATURE: Onset detection (note/drum hits)
@@ -211,10 +231,7 @@ s.waitForBoot({
 		//
 		// TWEAK: Change threshold to adjust sensitivity.
 		//        Change odftype to suit your music style.
-		onset = Onsets.kr(chain,
-			("SC_ONSET_THRESHOLD".getenv ? "0.5").asFloat, // threshold (from config.env)
-			\rcomplex                                       // detection algorithm
-		);
+		onset = Onsets.kr(chain, cfgOnsetThresh, cfgOnsetAlgo);
 
 		// Unlike other features, onset only sends when triggered (not on a timer).
 		// This means you'll get one OSC message per detected hit.
@@ -235,10 +252,10 @@ s.waitForBoot({
 		//
 		// TWEAK: Reduce to 7 to save CPU. Increase to 20 for more detail.
 		// USE CASE: Feed into a machine learning classifier for genre/mood detection.
-		mfcc = MFCC.kr(chain, 13);  // args: chain, numcoeff
+		mfcc = MFCC.kr(chain, cfgMFCCCount);
 
-		// mfcc is an array of 13 values — SendReply sends all of them
-		SendReply.kr(trig10, '/tr_mfcc', mfcc);
+		// mfcc is an array of cfgMFCCCount values — SendReply sends all of them
+		SendReply.kr(trigMedium, '/tr_mfcc', mfcc);
 
 		// ====================================================================
 		// FEATURE: Key detection (musical key)
@@ -258,8 +275,8 @@ s.waitForBoot({
 		// To get mode: raw < 12 means major, >= 12 means minor
 		//
 		// Sent at 2 Hz because key changes slowly in most music.
-		keyRaw = KeyTrack.kr(chain, 2.0);  // args: chain, keydecay (seconds)
-		SendReply.kr(trig2, '/tr_key', [keyRaw]);
+		keyRaw = KeyTrack.kr(chain, cfgKeyDecay);
+		SendReply.kr(trigSlow, '/tr_key', [keyRaw]);
 
 		// ====================================================================
 		// FEATURE: Beat tracking (tempo and beat positions)
@@ -282,7 +299,7 @@ s.waitForBoot({
 		//
 		// TWEAK: Set lock: 1 for tracks with steady tempo.
 		//        BeatTrack2 works best with clear rhythmic content (drums, bass).
-		bt2 = BeatTrack2.kr(chain, 0);  // args: chain, lock (0=free, 1=locked)
+		bt2 = BeatTrack2.kr(chain, cfgBeatLock);
 		beatTrig = bt2[0];  // beat trigger (index 0)
 		bpm = bt2[3];       // tempo in BPM (index 3)
 
@@ -310,8 +327,8 @@ s.waitForBoot({
 		//
 		// USE CASE: Visualize harmonic content, detect chord changes,
 		//           map note energy to colors/lights.
-		chroma = Chromagram.kr(chain, 2048);
-		SendReply.kr(trig10, '/tr_chroma', chroma);
+		chroma = Chromagram.kr(chain, cfgFFTSize);
+		SendReply.kr(trigMedium, '/tr_chroma', chroma);
 
 		// ====================================================================
 		// OUTPUT: silence (analysis only, no sound output)
@@ -393,15 +410,11 @@ s.waitForBoot({
 	}, '/tr_flatness');
 
 	// --- MFCC → /audio/mfcc ---
-	// Sends: 13 float coefficients
-	// msg[3] through msg[15] = coefficients 0 through 12
+	// Sends: cfgMFCCCount float coefficients
+	// msg[3] through msg[3 + cfgMFCCCount - 1] = coefficients
 	OSCdef(\fwdMFCC, { |msg|
-		dests.do({ |d| d.sendMsg('/audio/mfcc',
-			msg[3].asFloat, msg[4].asFloat, msg[5].asFloat, msg[6].asFloat,
-			msg[7].asFloat, msg[8].asFloat, msg[9].asFloat, msg[10].asFloat,
-			msg[11].asFloat, msg[12].asFloat, msg[13].asFloat, msg[14].asFloat,
-			msg[15].asFloat
-		) });
+		var coeffs = msg[3 .. (3 + cfgMFCCCount - 1)].collect(_.asFloat);
+		dests.do({ |d| d.sendMsg(*(['/audio/mfcc'] ++ coeffs)) });
 	}, '/tr_mfcc');
 
 	// --- Key → /audio/key ---

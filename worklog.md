@@ -54,3 +54,4 @@
 - [Task #16] Created help.html — in-app analysis reference with detailed descriptions of each feature matching analyzer.scd comments. Covers: amplitude, pitch, loudness, centroid, flatness, onset (with algorithm descriptions), MFCC, key detection, chromagram, beat tracking. Also documents trigger rates and feature toggles. Added Help nav link to all pages.
 - [Task #16] ✅
 - [Task #17] Enhanced README: added "Analysis Details" section with descriptions of all 10 features (matching analyzer.scd comment depth), updated "Disable features" to use config-driven SC_FEATURE_* toggles, added "Web Interface" section with startup instructions and page descriptions, updated OSC output table with ranges and configurable MFCC count.
+- [Task #17] ✅

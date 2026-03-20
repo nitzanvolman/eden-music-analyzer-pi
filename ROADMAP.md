@@ -87,7 +87,7 @@ installed), how to tune, and Output Reference (what the reciever of the OSC mess
     - 12c. [🟢] - Service restart endpoint (restart the analyzer process).
     - 12d. [🟢] - Configuration read/write API (expose all config values, apply changes, force reload).
     - 12e. [🟢] - Live OSC data websocket/SSE stream for real-time frontend consumption.
-13. [⚪] - Web interface: configuration control page — view and edit all configuration values, force configuration update.
+13. [🔵] - Web interface: configuration control page — view and edit all configuration values, force configuration update.
 14. [⚪] - Web interface: live OSC visualization — animated graphical visualization driven by real-time analysis data. Goal: testing, tweaking, and demo to the Eden crew.
 15. [⚪] - Web interface: two visualization screens — (1) public readonly view (wow factor) (2) expert/tweaking mode with configuration controls. Goal: help with integration and tuning the receivers (and ultimately the light show).
 16. [⚪] - Web interface: add analysis details as in-app help — descriptions of each analysis feature (detail level matching analyzer.scd comments).

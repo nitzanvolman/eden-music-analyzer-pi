@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SC-OSC Configuration</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: system-ui, sans-serif; max-width: 900px; margin: 0 auto; padding: 1rem; color: #e0e0e0; background: #1a1a2e; }
+        h1 { color: #e94560; margin-bottom: 0.5rem; }
+        a { color: #0f3460; }
+        .nav { margin-bottom: 1.5rem; }
+        .nav a { color: #e94560; text-decoration: none; margin-right: 1rem; }
+        .section { background: #16213e; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+        .section h2 { color: #e94560; margin: 0 0 0.75rem 0; font-size: 1.1rem; }
+        .field { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
+        .field label { min-width: 260px; font-size: 0.85rem; color: #a0a0b0; }
+        .field input, .field select { background: #0f3460; color: #e0e0e0; border: 1px solid #333; border-radius: 4px; padding: 0.4rem 0.6rem; font-size: 0.9rem; width: 200px; }
+        .field input:focus, .field select:focus { outline: none; border-color: #e94560; }
+        .field .default { font-size: 0.75rem; color: #666; margin-left: 0.5rem; }
+        .field.modified input, .field.modified select { border-color: #e94560; }
+        .actions { margin-top: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+        button { background: #e94560; color: white; border: none; border-radius: 6px; padding: 0.6rem 1.2rem; cursor: pointer; font-size: 0.9rem; }
+        button:hover { background: #c73650; }
+        button.secondary { background: #0f3460; }
+        button.secondary:hover { background: #1a4a80; }
+        .msg { padding: 0.75rem; border-radius: 6px; margin-top: 1rem; display: none; }
+        .msg.ok { display: block; background: #0f3460; border-left: 4px solid #4caf50; }
+        .msg.err { display: block; background: #0f3460; border-left: 4px solid #e94560; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="/">Home</a>
+        <a href="/static/config.html">Config</a>
+    </div>
+    <h1>Configuration</h1>
+    <p style="color:#666; margin-top:0;">Edit values and click Save. Restart the analyzer for changes to take effect.</p>
+
+    <div id="sections"></div>
+
+    <div class="actions">
+        <button onclick="save()">Save Changes</button>
+        <button class="secondary" onclick="restart()">Restart Analyzer</button>
+        <button class="secondary" onclick="loadConfig()">Reload</button>
+    </div>
+    <div id="msg" class="msg"></div>
+
+<script>
+const SECTIONS = [
+    { title: "OSC Destinations", keys: ["SC_OSC_DESTINATIONS"] },
+    { title: "Audio Input", keys: ["SC_AUDIO_INPUT_CHANNEL", "SC_JACK_DEVICE"] },
+    { title: "FFT", keys: ["SC_FFT_SIZE"] },
+    { title: "Amplitude", keys: ["SC_AMP_ATTACK_TIME", "SC_AMP_RELEASE_TIME"] },
+    { title: "Pitch Detection", keys: ["SC_PITCH_MIN_FREQ", "SC_PITCH_MAX_FREQ"] },
+    { title: "Onset Detection", keys: ["SC_ONSET_THRESHOLD", "SC_ONSET_ALGORITHM"] },
+    { title: "MFCC", keys: ["SC_MFCC_NUM_COEFF"] },
+    { title: "Key Detection", keys: ["SC_KEY_DECAY_TIME"] },
+    { title: "Beat Tracking", keys: ["SC_BEAT_LOCK"] },
+    { title: "Trigger Rates (Hz)", keys: ["SC_TRIG_RATE_FAST", "SC_TRIG_RATE_MEDIUM", "SC_TRIG_RATE_SLOW"] },
+    { title: "Feature Toggles", keys: [
+        "SC_FEATURE_AMPLITUDE", "SC_FEATURE_PITCH", "SC_FEATURE_LOUDNESS",
+        "SC_FEATURE_CENTROID", "SC_FEATURE_FLATNESS", "SC_FEATURE_ONSET",
+        "SC_FEATURE_MFCC", "SC_FEATURE_KEY", "SC_FEATURE_BEAT", "SC_FEATURE_CHROMA"
+    ]},
+    { title: "Test Mode", keys: ["SC_TEST_MODE"] },
+    { title: "Web Server", keys: ["SC_WEB_PORT", "SC_OSC_BRIDGE_PORT"] },
+];
+
+// Select options for specific keys
+const SELECT_OPTIONS = {
+    SC_ONSET_ALGORITHM: ["rcomplex", "complex", "phase", "wphase", "mkl", "magsum", "power"],
+    SC_BEAT_LOCK: ["0", "1"],
+    SC_TEST_MODE: ["0", "1"],
+    SC_FEATURE_AMPLITUDE: ["0", "1"], SC_FEATURE_PITCH: ["0", "1"],
+    SC_FEATURE_LOUDNESS: ["0", "1"], SC_FEATURE_CENTROID: ["0", "1"],
+    SC_FEATURE_FLATNESS: ["0", "1"], SC_FEATURE_ONSET: ["0", "1"],
+    SC_FEATURE_MFCC: ["0", "1"], SC_FEATURE_KEY: ["0", "1"],
+    SC_FEATURE_BEAT: ["0", "1"], SC_FEATURE_CHROMA: ["0", "1"],
+};
+
+let defaults = {};
+let original = {};
+
+function showMsg(text, ok) {
+    const el = document.getElementById('msg');
+    el.textContent = text;
+    el.className = 'msg ' + (ok ? 'ok' : 'err');
+    setTimeout(() => el.className = 'msg', 4000);
+}
+
+function createField(key, value, defaultVal) {
+    const div = document.createElement('div');
+    div.className = 'field';
+    div.dataset.key = key;
+
+    const label = document.createElement('label');
+    label.textContent = key;
+    div.appendChild(label);
+
+    let input;
+    if (SELECT_OPTIONS[key]) {
+        input = document.createElement('select');
+        SELECT_OPTIONS[key].forEach(opt => {
+            const o = document.createElement('option');
+            o.value = opt; o.textContent = opt;
+            if (opt === value) o.selected = true;
+            input.appendChild(o);
+        });
+    } else {
+        input = document.createElement('input');
+        input.type = 'text';
+        input.value = value || '';
+    }
+    input.dataset.key = key;
+    input.dataset.original = value || '';
+    input.addEventListener('input', () => {
+        div.classList.toggle('modified', input.value !== input.dataset.original);
+    });
+    div.appendChild(input);
+
+    if (defaultVal !== undefined) {
+        const span = document.createElement('span');
+        span.className = 'default';
+        span.textContent = '(default: ' + defaultVal + ')';
+        div.appendChild(span);
+    }
+
+    return div;
+}
+
+async function loadConfig() {
+    try {
+        const resp = await fetch('/api/config');
+        const data = await resp.json();
+        defaults = data.defaults || {};
+        original = data.config || {};
+
+        const container = document.getElementById('sections');
+        container.innerHTML = '';
+
+        // Collect all known keys
+        const allSectionKeys = new Set(SECTIONS.flatMap(s => s.keys));
+
+        SECTIONS.forEach(section => {
+            const sec = document.createElement('div');
+            sec.className = 'section';
+            const h2 = document.createElement('h2');
+            h2.textContent = section.title;
+            sec.appendChild(h2);
+
+            section.keys.forEach(key => {
+                const val = original[key] || defaults[key] || '';
+                sec.appendChild(createField(key, val, defaults[key]));
+            });
+
+            container.appendChild(sec);
+        });
+
+        // Show any extra keys not in SECTIONS
+        const extraKeys = Object.keys(original).filter(k => !allSectionKeys.has(k));
+        if (extraKeys.length > 0) {
+            const sec = document.createElement('div');
+            sec.className = 'section';
+            const h2 = document.createElement('h2');
+            h2.textContent = 'Other';
+            sec.appendChild(h2);
+            extraKeys.forEach(key => {
+                sec.appendChild(createField(key, original[key], defaults[key]));
+            });
+            container.appendChild(sec);
+        }
+
+    } catch (e) {
+        showMsg('Failed to load config: ' + e.message, false);
+    }
+}
+
+async function save() {
+    const inputs = document.querySelectorAll('.field input, .field select');
+    const changes = {};
+    inputs.forEach(input => {
+        const key = input.dataset.key;
+        const val = input.value;
+        if (val && val !== (defaults[key] || '')) {
+            changes[key] = val;
+        } else if (val) {
+            changes[key] = val;
+        }
+    });
+
+    // Send all values that have an actual value set
+    const payload = {};
+    inputs.forEach(input => {
+        if (input.value) payload[input.dataset.key] = input.value;
+    });
+
+    try {
+        const resp = await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+            showMsg('Saved. ' + (data.note || ''), true);
+            // Update originals
+            inputs.forEach(input => input.dataset.original = input.value);
+            document.querySelectorAll('.modified').forEach(el => el.classList.remove('modified'));
+        } else {
+            showMsg('Error: ' + (data.message || 'Unknown'), false);
+        }
+    } catch (e) {
+        showMsg('Save failed: ' + e.message, false);
+    }
+}
+
+async function restart() {
+    if (!confirm('Restart the analyzer?')) return;
+    try {
+        const resp = await fetch('/api/restart', { method: 'POST' });
+        const data = await resp.json();
+        showMsg('Restart: ' + data.status + ' (' + (data.method || '') + ')', resp.ok);
+    } catch (e) {
+        showMsg('Restart failed: ' + e.message, false);
+    }
+}
+
+loadConfig();
+</script>
+</body>
+</html>

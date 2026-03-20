@@ -93,7 +93,7 @@ installed), how to tune, and Output Reference (what the reciever of the OSC mess
 16. [🟢] - Web interface: add analysis details as in-app help — descriptions of each analysis feature (detail level matching analyzer.scd comments).
 17. [🟢] - Enhance README with detailed descriptions of each analysis type (matching the level of detail in analyzer.scd comments).
 18. [🟢] - Add install-on-Mac option (for testing on this machine).
-19. [🔵] - Add install-on-PC/Windows option (best effort, validate by web information only, must not interfere with Pi or Mac install modes).
+19. [🟢] - Add install-on-PC/Windows option (best effort, validate by web information only, must not interfere with Pi or Mac install modes).
 20. [⚪] - Logging with rotation — persistent logs with size caps (don't fill the SD card). Must capture sclang stdout/stderr.
 21. [⚪] - Web interface: log viewer screen — view logs in real-time from the web UI.
 22. [⚪] - CPU temperature monitoring + throttle alerts — expose Pi temp via web UI, warn when overheating.

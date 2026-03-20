@@ -373,9 +373,10 @@ function drawChroma() {
 
   ctx.clearRect(0, 0, w, h);
 
-  const labelH = 14;  // space reserved for note labels at bottom
-  const topPad = 4;   // small top padding
-  const barMaxH = h - labelH - topPad;
+  const bottomPad = 10; // margin from card bottom edge
+  const labelH = 14;   // space reserved for note labels
+  const topPad = 4;    // small top padding
+  const barMaxH = h - labelH - topPad - bottomPad;
 
   for (let i = 0; i < 12; i++) {
     const val = state.chroma[i] / maxVal;
@@ -404,7 +405,7 @@ function drawChroma() {
     ctx.fillStyle = val > 0.5 ? '#fff' : 'rgba(200,200,220,0.5)';
     ctx.font = '500 9px "JetBrains Mono"';
     ctx.textAlign = 'center';
-    ctx.fillText(NOTE_NAMES[i], x + barW / 2, h - 2);
+    ctx.fillText(NOTE_NAMES[i], x + barW / 2, h - bottomPad - 2);
   }
 }
 

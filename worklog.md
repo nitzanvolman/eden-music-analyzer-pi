@@ -38,3 +38,4 @@
 - [Task #12a] ✅
 - [Task #12b] Added GET /api/health endpoint returning: uptime_seconds, load_avg (1/5/15 min), memory (total/available/free from /proc/meminfo), disk usage (total/used/free), and cpu_temp_c (Pi thermal zone, when available).
 - [Task #12b] ✅
+- [Task #12c] Added POST /api/restart endpoint. Tries systemd first (sudo systemctl restart sc-osc), falls back to pkill for standalone sclang processes. Uses async subprocess for non-blocking execution. Returns method used (systemd/pkill) and error details on failure.

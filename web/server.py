@@ -9,6 +9,7 @@ import os
 import time
 import asyncio
 import shutil
+import subprocess
 from pathlib import Path
 from aiohttp import web
 
@@ -94,6 +95,55 @@ async def api_health(request: web.Request) -> web.Response:
     return web.json_response(data)
 
 
+async def api_restart(request: web.Request) -> web.Response:
+    """Restart the SC-OSC analyzer service.
+
+    Tries systemd first (sudo systemctl restart sc-osc), then falls back
+    to looking for a running sclang process and sending it SIGHUP/restarting.
+    """
+    try:
+        # Check if systemd service exists
+        check = await asyncio.create_subprocess_exec(
+            "systemctl", "is-active", "sc-osc",
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
+        stdout, _ = await check.communicate()
+        service_active = check.returncode == 0
+
+        if service_active or stdout.decode().strip() in ("inactive", "failed", "activating"):
+            # Systemd service exists — restart it
+            proc = await asyncio.create_subprocess_exec(
+                "sudo", "systemctl", "restart", "sc-osc",
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            )
+            _, stderr = await proc.communicate()
+            if proc.returncode == 0:
+                return web.json_response({"status": "restarting", "method": "systemd"})
+            return web.json_response(
+                {"status": "error", "message": stderr.decode().strip()},
+                status=500,
+            )
+
+        # No systemd service — try to find and restart sclang directly
+        proc = await asyncio.create_subprocess_exec(
+            "pkill", "-f", "sclang.*analyzer.scd",
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
+        await proc.communicate()
+        # pkill returns 0 if matched, 1 if no match — both are OK
+        return web.json_response({
+            "status": "restarting",
+            "method": "pkill",
+            "note": "Process killed. If using autostart/crontab, it will restart automatically.",
+        })
+
+    except Exception as e:
+        return web.json_response(
+            {"status": "error", "message": str(e)},
+            status=500,
+        )
+
+
 def create_app() -> web.Application:
     """Create and configure the aiohttp application."""
     app = web.Application()
@@ -102,6 +152,7 @@ def create_app() -> web.Application:
     app.router.add_get("/", index)
     app.router.add_get("/api/ping", api_ping)
     app.router.add_get("/api/health", api_health)
+    app.router.add_post("/api/restart", api_restart)
 
     # Static file serving (if directory exists)
     if STATIC_DIR.exists():

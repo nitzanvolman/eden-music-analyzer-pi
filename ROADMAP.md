@@ -82,7 +82,7 @@ installed), how to tune, and Output Reference (what the reciever of the OSC mess
 10. [🟢] - Configuration allows toggling individual analysis features on/off to conserve CPU (gate SendReply triggers per feature).
 11. [🟢] - Configuration can toggle OSC test mode on/off.
 12. [⚪] - Web interface: Python web server setup. Design assuming WiFi drops frequently (art car conditions).
-    - 12a. [⚪] - Set up a simple Python web server (default port 8080) with basic routing.
+    - 12a. [🔵] - Set up a simple Python web server (default port 8080) with basic routing.
     - 12b. [⚪] - Server health monitoring endpoint (uptime, status, resource usage).
     - 12c. [⚪] - Service restart endpoint (restart the analyzer process).
     - 12d. [⚪] - Configuration read/write API (expose all config values, apply changes, force reload).

@@ -72,4 +72,5 @@
 - [Task #24a] Replaced single onset detector in analyzer.scd with 10-channel onset suite.
 - [Task #24a] ✅
 - [Task #24b] Replaced old SC_ONSET_THRESHOLD and SC_ONSET_ALGORITHM in config_template.env with full onset suite config: 10 channel toggles and 10 threshold vars, organized by category (percussive/melodic/general). Replaced SC_FEATURE_ONSET with SC_FEATURE_ONSET_SUITE. Updated tests/conftest.py to use new var names.
+- [Task #24b] ✅
 - [Task #24a details] 6 frequency-filtered channels (kick LPF 100Hz, snare BPF 200-2000Hz, hihat HPF 5000Hz, bass LPF 200Hz, melody BPF 300-4000Hz, bright HPF 3000Hz) each with their own FFT. 4 full-spectrum channels (perc, any, drop, soft) sharing main FFT via PV_Copy. Each channel has its own algorithm (mkl/phase/rcomplex/power), enable/disable toggle, and threshold config var. Removed old SC_ONSET_ALGORITHM and SC_ONSET_THRESHOLD. Added SC_FEATURE_ONSET_SUITE master toggle. Updated test mode to send synthetic triggers for all 10 channels at realistic rates. Updated OSCdef forwarders for all 10 onset paths (/audio/onset/kick, /snare, /hihat, /perc, /bass, /melody, /bright, /any, /drop, /soft).

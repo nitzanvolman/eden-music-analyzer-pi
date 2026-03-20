@@ -22,3 +22,4 @@
 - [Task #5] ✅
 - [Task #4] ❌ - Re-review against SC API docs found: (1) onset algorithm options missing `complex` and `magsum`, (2) KeyTrack requires FFT size 4096 but no warning in config template. Fixed both issues.
 - [Task #4] ✅
+- [Task #5] ✅ (re-review with SC API docs — used .ip instead of undocumented .hostname on NetAddr)

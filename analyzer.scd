@@ -63,7 +63,7 @@ if(destStr.notNil and: { destStr.size > 0 }, {
 "==============================================".postln;
 ("  Date: " ++ Date.localtime.asString).postln;
 dests.do({ |d|
-	("  OSC destination: " ++ d.hostname ++ ":" ++ d.port).postln;
+	("  OSC destination: " ++ d.ip ++ ":" ++ d.port).postln;
 });
 "----------------------------------------------".postln;
 

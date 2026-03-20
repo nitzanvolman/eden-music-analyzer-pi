@@ -85,7 +85,7 @@ installed), how to tune, and Output Reference (what the reciever of the OSC mess
     - 12a. [🟢] - Set up a simple Python web server (default port 8080) with basic routing.
     - 12b. [🟢] - Server health monitoring endpoint (uptime, status, resource usage).
     - 12c. [🟢] - Service restart endpoint (restart the analyzer process).
-    - 12d. [🔵] - Configuration read/write API (expose all config values, apply changes, force reload).
+    - 12d. [🟢] - Configuration read/write API (expose all config values, apply changes, force reload).
     - 12e. [⚪] - Live OSC data websocket/SSE stream for real-time frontend consumption.
 13. [⚪] - Web interface: configuration control page — view and edit all configuration values, force configuration update.
 14. [⚪] - Web interface: live OSC visualization — animated graphical visualization driven by real-time analysis data. Goal: testing, tweaking, and demo to the Eden crew.

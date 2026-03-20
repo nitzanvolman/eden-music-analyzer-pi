@@ -237,6 +237,15 @@ async def api_config_set(request: web.Request) -> web.Response:
             status=400,
         )
 
+    # Validate values (no newlines — would corrupt env file)
+    for k, v in body.items():
+        sv = str(v)
+        if "\n" in sv or "\r" in sv:
+            return web.json_response(
+                {"status": "error", "message": f"Value for {k} contains invalid characters"},
+                status=400,
+            )
+
     # Read current config, merge updates
     current = _parse_env_file(CONFIG_FILE)
     current.update({k: str(v) for k, v in body.items()})

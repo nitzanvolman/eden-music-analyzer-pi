@@ -41,3 +41,4 @@
 - [Task #12c] Added POST /api/restart endpoint. Tries systemd first (sudo systemctl restart sc-osc), falls back to pkill for standalone sclang processes. Uses async subprocess for non-blocking execution. Returns method used (systemd/pkill) and error details on failure.
 - [Task #12c] ✅
 - [Task #12d] Added config read/write API. GET /api/config returns current values + template defaults. POST /api/config accepts JSON body to update values (validates SC_ prefix). Write preserves file structure/comments from template. Keys are validated to prevent arbitrary env pollution.
+- [Task #12d] ✅ (added newline injection validation for config values)

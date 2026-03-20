@@ -92,4 +92,5 @@
 - [Task #30] ✅
 - [Task #31] ✅
 - [Task #31] Fixed pitch ribbon jitter.
+- [Task #32] ✅
 - [Task #32] Fit viz layout on screen: removed wide class from Pitch and Chromagram cards (now single-column, fit 3 in a row with Key). Reduced canvas heights (pitch 60→48, chroma 100→64). Tightened grid (minmax 280→240px, gap 1→0.75rem), card padding (1→0.75rem), header padding, section group margins. Reduced key note font (2.8→2.2rem). Root cause: median was recalculated from entire history buffer every frame, causing range to shift constantly. Fix: range only re-centers when the latest note is more than 10 semitones from center (near edge of visible window). Center transitions are smoothed with lerp (0.08 factor) to avoid sudden jumps. Range is now stable during normal playing.

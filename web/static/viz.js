@@ -373,14 +373,18 @@ function drawChroma() {
 
   ctx.clearRect(0, 0, w, h);
 
+  const labelH = 14;  // space reserved for note labels at bottom
+  const topPad = 4;   // small top padding
+  const barMaxH = h - labelH - topPad;
+
   for (let i = 0; i < 12; i++) {
     const val = state.chroma[i] / maxVal;
-    const barH = val * (h - 20);
+    const barH = Math.max(val * barMaxH, 2); // minimum 2px so low values are visible
     const x = i * (barW + 3);
-    const y = h - 14 - barH;
+    const y = topPad + barMaxH - barH;
 
     // Gradient per bar
-    const grad = ctx.createLinearGradient(x, y, x, h - 14);
+    const grad = ctx.createLinearGradient(x, y, x, topPad + barMaxH);
     const hue = (i / 12) * 300; // rainbow across pitch classes
     grad.addColorStop(0, `hsla(${hue}, 90%, 65%, 0.95)`);
     grad.addColorStop(1, `hsla(${hue}, 70%, 35%, 0.6)`);

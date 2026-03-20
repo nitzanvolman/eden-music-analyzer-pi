@@ -33,3 +33,4 @@
 - [Task #9] ✅
 - [Task #10] Added SC_FEATURE_* toggles (10 features). Disabled features are excluded from SynthDef graph entirely via sclang-side if() during compilation — no UGen, no SendReply, no OSCdef registered. Test mode also respects feature flags. Added all toggles to config_template.env.
 - [Task #10] ✅ (updated HOW TO TWEAK header comment to reflect config-driven approach)
+- [Task #11] Already completed as part of Task #8 (SC_TEST_MODE in config_template.env + analyzer.scd). Marked done.

@@ -80,7 +80,7 @@ installed), how to tune, and Output Reference (what the reciever of the OSC mess
 8. [🟢] - Add OSC test mode as a mode within analyzer.scd: when enabled, bypass audio input and send synthetic OSC messages on all channels (for testing receivers without audio).
 9. [🟢] - Install script creates a Python (3.12+) virtual environment.
 10. [🟢] - Configuration allows toggling individual analysis features on/off to conserve CPU (gate SendReply triggers per feature).
-11. [⚪] - Configuration can toggle OSC test mode on/off.
+11. [🟢] - Configuration can toggle OSC test mode on/off.
 12. [⚪] - Web interface: Python web server setup. Design assuming WiFi drops frequently (art car conditions).
     - 12a. [⚪] - Set up a simple Python web server (default port 8080) with basic routing.
     - 12b. [⚪] - Server health monitoring endpoint (uptime, status, resource usage).

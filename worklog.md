@@ -60,3 +60,4 @@
 - [Task #19] Created INSTALL_WINDOWS.md — best-effort Windows guide based on web research. Covers: SuperCollider install (Chocolatey or official installer), sc3-plugins, Python 3.12+, project setup via PowerShell, config.env sourcing workaround, audio setup (WASAPI/ASIO), known limitations, troubleshooting. Updated INSTALL.md with platform links.
 - [Task #19] ✅
 - [Task #20] Added logging with rotation. autostart.sh: logs to ~/sc-osc/logs/analyzer.log, rotates on startup if >5MB (keeps 3 backups). Web server: Python RotatingFileHandler to ~/sc-osc/logs/web.log (5MB, 3 backups). Added GET /api/logs endpoint for reading recent log lines (supports analyzer and web logs). Added logs/ to .gitignore.
+- [Task #20] ✅ (added integer validation for lines query param)

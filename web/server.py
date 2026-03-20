@@ -272,7 +272,10 @@ async def api_logs(request: web.Request) -> web.Response:
     """
     log_dir = SC_OSC_DIR / "logs"
     file_name = request.query.get("file", "analyzer")
-    num_lines = min(int(request.query.get("lines", "100")), 500)
+    try:
+        num_lines = min(int(request.query.get("lines", "100")), 500)
+    except ValueError:
+        num_lines = 100
 
     if file_name not in ("analyzer", "web"):
         return web.json_response({"status": "error", "message": "Invalid file"}, status=400)

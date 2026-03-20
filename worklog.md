@@ -28,3 +28,4 @@
 - [Task #7] Added config.env to .gitignore and removed it from git tracking. Updated install.sh to copy config_template.env → config.env (if not present) and always copy config_template.env so users can see new parameters.
 - [Task #7] ✅ (also fixed INSTALL.md manual steps to reference config_template.env instead of config.env)
 - [Task #8] Added OSC test mode (SC_TEST_MODE=1). When enabled, bypasses scsynth entirely and runs sclang-side Routines that send synthetic plausible data on all OSC channels: amplitude, pitch, loudness, centroid, flatness (fast rate), MFCC and chroma (medium rate), key (slow rate), beat/BPM (simulated ~120 BPM with drift), and onset (random). Added SC_TEST_MODE to config_template.env.
+- [Task #8] ✅ (removed unused phase/beatPhase vars)

@@ -103,8 +103,6 @@ if(cfgTestMode, {
 	// Runs entirely in sclang — no scsynth needed. Sends plausible fake
 	// data on all OSC channels at the configured trigger rates.
 
-	var phase = 0.0;   // slowly rotating phase for smooth synthetic values
-	var beatPhase = 0.0;
 	var noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
 	// --- Fast features (amplitude, pitch, loudness, centroid, flatness) ---

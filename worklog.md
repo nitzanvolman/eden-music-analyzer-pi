@@ -31,3 +31,4 @@
 - [Task #8] ✅ (removed unused phase/beatPhase vars)
 - [Task #9] Added Python venv creation to install.sh. Searches for Python 3.12+ (tries python3.13, python3.12, python3 with version check). Creates venv at ~/sc-osc/.venv if not present. Upgrades pip and installs requirements.txt if it exists. Warns gracefully if Python 3.12+ not found.
 - [Task #9] ✅
+- [Task #10] Added SC_FEATURE_* toggles (10 features). Disabled features are excluded from SynthDef graph entirely via sclang-side if() during compilation — no UGen, no SendReply, no OSCdef registered. Test mode also respects feature flags. Added all toggles to config_template.env.

@@ -31,6 +31,8 @@ var cfgPitchMinFreq, cfgPitchMaxFreq, cfgOnsetThresh, cfgOnsetAlgo;
 var cfgMFCCCount, cfgKeyDecay, cfgBeatLock;
 var cfgTrigFast, cfgTrigMedium, cfgTrigSlow;
 var cfgTestMode;
+var featAmp, featPitch, featLoud, featCentroid, featFlatness;
+var featOnset, featMFCC, featKey, featBeat, featChroma;
 
 // ============================================================================
 // CONFIGURATION
@@ -79,6 +81,19 @@ cfgTrigMedium  = ("SC_TRIG_RATE_MEDIUM".getenv ? "10").asFloat;
 cfgTrigSlow    = ("SC_TRIG_RATE_SLOW".getenv ? "2").asFloat;
 cfgTestMode    = ("SC_TEST_MODE".getenv ? "0") == "1";
 
+// --- Feature toggles (1 = enabled, 0 = disabled) ---
+// Disabled features are excluded from the SynthDef graph entirely, saving CPU.
+featAmp      = ("SC_FEATURE_AMPLITUDE".getenv ? "1") == "1";
+featPitch    = ("SC_FEATURE_PITCH".getenv ? "1") == "1";
+featLoud     = ("SC_FEATURE_LOUDNESS".getenv ? "1") == "1";
+featCentroid = ("SC_FEATURE_CENTROID".getenv ? "1") == "1";
+featFlatness = ("SC_FEATURE_FLATNESS".getenv ? "1") == "1";
+featOnset    = ("SC_FEATURE_ONSET".getenv ? "1") == "1";
+featMFCC     = ("SC_FEATURE_MFCC".getenv ? "1") == "1";
+featKey      = ("SC_FEATURE_KEY".getenv ? "1") == "1";
+featBeat     = ("SC_FEATURE_BEAT".getenv ? "1") == "1";
+featChroma   = ("SC_FEATURE_CHROMA".getenv ? "1") == "1";
+
 // --- Startup banner (printed to console / log) ---
 "==============================================".postln;
 "  SC-OSC Audio Analyzer".postln;
@@ -118,11 +133,11 @@ if(cfgTestMode, {
 			var flatness = (sin(t * 0.4) * 0.3 + 0.3).clip(0, 1);
 
 			dests.do({ |d|
-				d.sendMsg('/audio/amplitude', amp);
-				d.sendMsg('/audio/pitch', freq, hasFreq);
-				d.sendMsg('/audio/loudness', loud);
-				d.sendMsg('/audio/spectral/centroid', centroid);
-				d.sendMsg('/audio/spectral/flatness', flatness);
+				if(featAmp, { d.sendMsg('/audio/amplitude', amp) });
+				if(featPitch, { d.sendMsg('/audio/pitch', freq, hasFreq) });
+				if(featLoud, { d.sendMsg('/audio/loudness', loud) });
+				if(featCentroid, { d.sendMsg('/audio/spectral/centroid', centroid) });
+				if(featFlatness, { d.sendMsg('/audio/spectral/flatness', flatness) });
 			});
 			dt.wait;
 		};
@@ -144,47 +159,52 @@ if(cfgTestMode, {
 				if(i == dominantNote, { 0.8 + (0.2.rand) }, { 0.1.rand });
 			});
 			dests.do({ |d|
-				d.sendMsg(*mfccArgs);
-				d.sendMsg(*chromaArgs);
+				if(featMFCC, { d.sendMsg(*mfccArgs) });
+				if(featChroma, { d.sendMsg(*chromaArgs) });
 			});
 			dt.wait;
 		};
 	}).play;
 
 	// --- Slow features (key) ---
-	Routine({
-		var dt = 1.0 / cfgTrigSlow;
-		loop {
-			var t = Main.elapsedTime;
-			var key = ((t * 0.1) % 12).asInteger;
-			var mode = if((t % 20) < 10, { 1 }, { 0 }); // alternate major/minor
-			dests.do({ |d| d.sendMsg('/audio/key', key, mode) });
-			("  [test] key: " ++ noteNames[key] ++ if(mode == 1, { " major" }, { " minor" })).postln;
-			dt.wait;
-		};
-	}).play;
+	if(featKey, {
+		Routine({
+			var dt = 1.0 / cfgTrigSlow;
+			loop {
+				var t = Main.elapsedTime;
+				var key = ((t * 0.1) % 12).asInteger;
+				var mode = if((t % 20) < 10, { 1 }, { 0 });
+				dests.do({ |d| d.sendMsg('/audio/key', key, mode) });
+				("  [test] key: " ++ noteNames[key] ++ if(mode == 1, { " major" }, { " minor" })).postln;
+				dt.wait;
+			};
+		}).play;
+	});
 
 	// --- Beat (simulated ~120 BPM) ---
-	Routine({
-		var bpm = 120;
-		loop {
-			dests.do({ |d|
-				d.sendMsg('/audio/beat', 1);
-				d.sendMsg('/audio/bpm', bpm.asFloat);
-			});
-			// Slowly drift BPM between 100-140
-			bpm = (sin(Main.elapsedTime * 0.05) * 20 + 120).clip(60, 200);
-			(60.0 / bpm).wait;
-		};
-	}).play;
+	if(featBeat, {
+		Routine({
+			var bpm = 120;
+			loop {
+				dests.do({ |d|
+					d.sendMsg('/audio/beat', 1);
+					d.sendMsg('/audio/bpm', bpm.asFloat);
+				});
+				bpm = (sin(Main.elapsedTime * 0.05) * 20 + 120).clip(60, 200);
+				(60.0 / bpm).wait;
+			};
+		}).play;
+	});
 
 	// --- Onset (simulated random hits) ---
-	Routine({
-		loop {
-			dests.do({ |d| d.sendMsg('/audio/onset', 1) });
-			(0.1 + 0.4.rand).wait; // random interval 0.1-0.5s
-		};
-	}).play;
+	if(featOnset, {
+		Routine({
+			loop {
+				dests.do({ |d| d.sendMsg('/audio/onset', 1) });
+				(0.1 + 0.4.rand).wait;
+			};
+		}).play;
+	});
 
 	"  Test mode running. Sending synthetic OSC data.".postln;
 	("  Sending to " ++ dests.size.asString ++ " destination(s)").postln;
@@ -252,187 +272,85 @@ s.waitForBoot({
 		// ====================================================================
 		// FEATURE: Amplitude (volume level)
 		// ====================================================================
-		// Amplitude.kr follows the volume envelope of the signal.
-		// attackTime: how fast it reacts to volume increases (seconds)
-		// releaseTime: how fast it reacts to volume decreases (seconds)
-		// Output: 0.0 (silence) to ~1.0 (full scale)
-		//
-		// TWEAK: Increase attackTime for smoother response, decrease for snappier
-		amp = Amplitude.kr(sig, cfgAmpAttack, cfgAmpRelease);
-
-		// SendReply sends data from scsynth (audio server) back to sclang (client).
-		// trig30 = send 30 times per second
-		// '/tr_amp' = internal message name (matched by OSCdef below)
-		// [amp] = the data to send (wrapped in array)
-		SendReply.kr(trigFast, '/tr_amp', [amp]);
+		if(featAmp, {
+			amp = Amplitude.kr(sig, cfgAmpAttack, cfgAmpRelease);
+			SendReply.kr(trigFast, '/tr_amp', [amp]);
+		});
 
 		// ====================================================================
 		// FEATURE: Pitch detection
 		// ====================================================================
-		// Pitch.kr detects the fundamental frequency of the audio.
-		// Returns two values:
-		//   freq    = detected frequency in Hz (e.g., 440.0 for concert A)
-		//   hasFreq = confidence (0.0 = no pitch detected, 1.0 = confident)
-		//
-		// The "#" syntax unpacks multiple return values into separate variables.
-		//
-		// minFreq/maxFreq limits the detection range.
-		// TWEAK: For bass-heavy music, lower minFreq to 30.
-		//        For vocals only, narrow to 80-1000.
-		// Pitch.kr args: input, initFreq, minFreq, maxFreq, ...
-		// We set initFreq to default (440), minFreq=50, maxFreq=4000
-		# freq, hasFreq = Pitch.kr(sig, 440, cfgPitchMinFreq, cfgPitchMaxFreq);
-		SendReply.kr(trigFast, '/tr_pitch', [freq, hasFreq]);
+		if(featPitch, {
+			# freq, hasFreq = Pitch.kr(sig, 440, cfgPitchMinFreq, cfgPitchMaxFreq);
+			SendReply.kr(trigFast, '/tr_pitch', [freq, hasFreq]);
+		});
 
 		// ====================================================================
 		// FEATURE: Loudness (perceptual)
 		// ====================================================================
-		// Loudness.kr measures perceived loudness in sones (psychoacoustic model).
-		// Unlike raw amplitude, this accounts for how humans actually hear —
-		// e.g., we're more sensitive to midrange frequencies.
-		// Requires an FFT chain as input.
-		// Output: 0 (silence) to ~64+ (very loud)
-		loud = Loudness.kr(chain);
-		SendReply.kr(trigFast, '/tr_loudness', [loud]);
+		if(featLoud, {
+			loud = Loudness.kr(chain);
+			SendReply.kr(trigFast, '/tr_loudness', [loud]);
+		});
 
 		// ====================================================================
 		// FEATURE: Spectral Centroid ("brightness")
 		// ====================================================================
-		// The "center of mass" of the frequency spectrum.
-		// High value = bright/trebly sound. Low value = dark/bassy sound.
-		// Output: frequency in Hz (typically 200-8000 for music)
-		//
-		// USE CASE: Map to color temperature — low=warm/red, high=cool/blue
-		centroid = SpecCentroid.kr(chain);
-		SendReply.kr(trigFast, '/tr_centroid', [centroid]);
+		if(featCentroid, {
+			centroid = SpecCentroid.kr(chain);
+			SendReply.kr(trigFast, '/tr_centroid', [centroid]);
+		});
 
 		// ====================================================================
 		// FEATURE: Spectral Flatness ("noisiness")
 		// ====================================================================
-		// Measures how noise-like vs tone-like the sound is.
-		// 0.0 = pure tone (like a flute). 1.0 = pure noise (like static).
-		// Drums/percussion tend to have higher flatness than melodic instruments.
-		//
-		// USE CASE: Distinguish between rhythmic and melodic sections
-		flatness = SpecFlatness.kr(chain);
-		SendReply.kr(trigFast, '/tr_flatness', [flatness]);
+		if(featFlatness, {
+			flatness = SpecFlatness.kr(chain);
+			SendReply.kr(trigFast, '/tr_flatness', [flatness]);
+		});
 
 		// ====================================================================
 		// FEATURE: Onset detection (note/drum hits)
 		// ====================================================================
-		// Onsets.kr detects when a new note or drum hit starts.
-		// It outputs a single trigger pulse (0 or 1) at each onset.
-		//
-		// threshold: sensitivity. Lower = detects more onsets (including quiet ones).
-		//   0.5 is a good starting point. Try 0.3 for sensitive, 0.7 for strict.
-		//
-		// odftype: the detection algorithm. Options:
-		//   \rcomplex — (default) good all-round, handles both pitched and percussive
-		//   \phase    — good for pitched instruments
-		//   \wphase   — weighted phase deviation
-		//   \mkl      — good for percussive sounds
-		//   \power    — simple energy-based
-		//
-		// TWEAK: Change threshold to adjust sensitivity.
-		//        Change odftype to suit your music style.
-		onset = Onsets.kr(chain, cfgOnsetThresh, cfgOnsetAlgo);
-
-		// Unlike other features, onset only sends when triggered (not on a timer).
-		// This means you'll get one OSC message per detected hit.
-		SendReply.kr(onset, '/tr_onset', [1]);
+		if(featOnset, {
+			onset = Onsets.kr(chain, cfgOnsetThresh, cfgOnsetAlgo);
+			SendReply.kr(onset, '/tr_onset', [1]);
+		});
 
 		// ====================================================================
 		// FEATURE: MFCC (timbre fingerprint)
 		// ====================================================================
-		// Mel-Frequency Cepstral Coefficients — a compact representation of the
-		// sound's "texture" or "color." Used in speech recognition and music
-		// classification. Each coefficient captures a different aspect of the
-		// spectral shape.
-		//
-		// numcoeff: how many coefficients (default 13). More = more detail.
-		// The first coefficient (~c0) relates to overall energy.
-		// Coefficients 1-5 capture broad spectral shape.
-		// Higher coefficients capture finer spectral detail.
-		//
-		// TWEAK: Reduce to 7 to save CPU. Increase to 20 for more detail.
-		// USE CASE: Feed into a machine learning classifier for genre/mood detection.
-		mfcc = MFCC.kr(chain, cfgMFCCCount);
-
-		// mfcc is an array of cfgMFCCCount values — SendReply sends all of them
-		SendReply.kr(trigMedium, '/tr_mfcc', mfcc);
+		if(featMFCC, {
+			mfcc = MFCC.kr(chain, cfgMFCCCount);
+			SendReply.kr(trigMedium, '/tr_mfcc', mfcc);
+		});
 
 		// ====================================================================
 		// FEATURE: Key detection (musical key)
 		// ====================================================================
-		// KeyTrack.kr estimates the musical key (C major, A minor, etc.).
-		// It analyzes the pattern of pitch classes (chroma) to find the best
-		// matching key profile.
-		//
-		// keydecay: smoothing time in seconds. Higher = more stable but slower
-		//   to react to key changes. 2.0 seconds is good for songs that stay
-		//   in one key. Reduce to 0.5 for music with frequent key changes.
-		//
-		// Returns a SINGLE integer 0-23:
-		//   0-11  = C major, C# major, D major, ... B major
-		//   12-23 = C minor, C# minor, D minor, ... B minor
-		// To get pitch class: raw % 12 (0=C, 1=C#, ... 11=B)
-		// To get mode: raw < 12 means major, >= 12 means minor
-		//
-		// Sent at 2 Hz because key changes slowly in most music.
-		keyRaw = KeyTrack.kr(chain, cfgKeyDecay);
-		SendReply.kr(trigSlow, '/tr_key', [keyRaw]);
+		if(featKey, {
+			keyRaw = KeyTrack.kr(chain, cfgKeyDecay);
+			SendReply.kr(trigSlow, '/tr_key', [keyRaw]);
+		});
 
 		// ====================================================================
 		// FEATURE: Beat tracking (tempo and beat positions)
 		// ====================================================================
-		// BeatTrack2.kr detects beat positions and estimates tempo (BPM).
-		// It uses a template-matching approach, testing both straight and
-		// swung rhythmic patterns.
-		//
-		// lock: how much the tracker resists tempo changes.
-		//   0 = free to change tempo quickly (good for live DJs)
-		//   1 = locks to current tempo (good for steady tracks)
-		//
-		// Returns 6 channels (we index explicitly to get the right ones):
-		//   [0] beatTrig    = 1 on each detected beat
-		//   [1] eighthTrig  = 1 on eighth-note subdivisions
-		//   [2] grooveTrig  = 1 on groove pattern matches
-		//   [3] tempo       = estimated BPM
-		//   [4] phase       = beat phase (0.0-1.0)
-		//   [5] groovePhase = groove phase
-		//
-		// TWEAK: Set lock: 1 for tracks with steady tempo.
-		//        BeatTrack2 works best with clear rhythmic content (drums, bass).
-		bt2 = BeatTrack2.kr(chain, cfgBeatLock);
-		beatTrig = bt2[0];  // beat trigger (index 0)
-		bpm = bt2[3];       // tempo in BPM (index 3)
-
-		// Only send on actual beats (not on a timer)
-		SendReply.kr(beatTrig, '/tr_beat', [1]);
-		SendReply.kr(beatTrig, '/tr_bpm', [bpm]);
+		if(featBeat, {
+			bt2 = BeatTrack2.kr(chain, cfgBeatLock);
+			beatTrig = bt2[0];
+			bpm = bt2[3];
+			SendReply.kr(beatTrig, '/tr_beat', [1]);
+			SendReply.kr(beatTrig, '/tr_bpm', [bpm]);
+		});
 
 		// ====================================================================
 		// FEATURE: Chromagram (pitch class energy)
 		// ====================================================================
-		// A chromagram shows the energy of each of the 12 musical pitch classes
-		// (C, C#, D, D#, E, F, F#, G, G#, A, A#, B) regardless of octave.
-		// Think of it as "which notes are playing right now."
-		//
-		// Chromagram is from SCMIRUGens (part of sc3-plugins, included in
-		// the redFrik standalone). If you built SC from source, you must also
-		// build and install sc3-plugins for this to work.
-		//
-		// Arguments: chain (FFT buffer), fftsize (must match FFT buffer above)
-		// Output: array of 12 floats (energy per pitch class, C through B)
-		//
-		// TROUBLESHOOTING: If SC errors with "Class not defined: Chromagram",
-		// sc3-plugins are not installed. Comment out these two lines and the
-		// /tr_chroma OSCdef below to run without chroma.
-		//
-		// USE CASE: Visualize harmonic content, detect chord changes,
-		//           map note energy to colors/lights.
-		chroma = Chromagram.kr(chain, cfgFFTSize);
-		SendReply.kr(trigMedium, '/tr_chroma', chroma);
+		if(featChroma, {
+			chroma = Chromagram.kr(chain, cfgFFTSize);
+			SendReply.kr(trigMedium, '/tr_chroma', chroma);
+		});
 
 		// ====================================================================
 		// OUTPUT: silence (analysis only, no sound output)
@@ -477,85 +395,73 @@ s.waitForBoot({
 	// dests.do iterates over all configured OSC destinations and sends
 	// the message to each one (broadcast pattern).
 	//
-	// TO DISABLE A FEATURE: comment out both its SendReply (above) and
-	// its OSCdef (below). This saves both CPU and network bandwidth.
+	// TO DISABLE A FEATURE: set SC_FEATURE_<name>=0 in config.env.
+	// This excludes the UGen from the graph entirely, saving CPU.
 	// ========================================================================
 
-	// --- Amplitude → /audio/amplitude ---
-	OSCdef(\fwdAmp, { |msg|
-		dests.do({ |d| d.sendMsg('/audio/amplitude', msg[3].asFloat) });
-	}, '/tr_amp');
-
-	// --- Pitch → /audio/pitch ---
-	// Sends: frequency (Hz), hasFreq (0.0-1.0 confidence)
-	OSCdef(\fwdPitch, { |msg|
-		dests.do({ |d| d.sendMsg('/audio/pitch', msg[3].asFloat, msg[4].asFloat) });
-	}, '/tr_pitch');
-
-	// --- Onset → /audio/onset ---
-	// Sends: 1 (fires only when an onset is detected)
-	OSCdef(\fwdOnset, { |msg|
-		dests.do({ |d| d.sendMsg('/audio/onset', 1) });
-	}, '/tr_onset');
-
-	// --- Loudness → /audio/loudness ---
-	OSCdef(\fwdLoudness, { |msg|
-		dests.do({ |d| d.sendMsg('/audio/loudness', msg[3].asFloat) });
-	}, '/tr_loudness');
-
-	// --- Spectral Centroid → /audio/spectral/centroid ---
-	OSCdef(\fwdCentroid, { |msg|
-		dests.do({ |d| d.sendMsg('/audio/spectral/centroid', msg[3].asFloat) });
-	}, '/tr_centroid');
-
-	// --- Spectral Flatness → /audio/spectral/flatness ---
-	OSCdef(\fwdFlatness, { |msg|
-		dests.do({ |d| d.sendMsg('/audio/spectral/flatness', msg[3].asFloat) });
-	}, '/tr_flatness');
-
-	// --- MFCC → /audio/mfcc ---
-	// Sends: cfgMFCCCount float coefficients
-	// msg[3] through msg[3 + cfgMFCCCount - 1] = coefficients
-	OSCdef(\fwdMFCC, { |msg|
-		var coeffs = msg[3 .. (3 + cfgMFCCCount - 1)].collect(_.asFloat);
-		dests.do({ |d| d.sendMsg(*(['/audio/mfcc'] ++ coeffs)) });
-	}, '/tr_mfcc');
-
-	// --- Key → /audio/key ---
-	// KeyTrack returns a single integer 0-23. We decode it here:
-	//   0-11  = C major through B major
-	//   12-23 = C minor through B minor
-	// We split it into key (0-11) and mode (0=minor, 1=major) for the consumer.
-	OSCdef(\fwdKey, { |msg|
-		var raw, key, mode;
-		raw = msg[3].asInteger;
-		key = raw % 12;                    // pitch class: 0=C, 1=C#, ... 11=B
-		mode = if(raw < 12, { 1 }, { 0 }); // 1=major, 0=minor
-		dests.do({ |d| d.sendMsg('/audio/key', key, mode) });
-	}, '/tr_key');
-
-	// --- Beat → /audio/beat ---
-	// Sends: 1 (fires only on detected beats)
-	OSCdef(\fwdBeat, { |msg|
-		dests.do({ |d| d.sendMsg('/audio/beat', 1) });
-	}, '/tr_beat');
-
-	// --- BPM → /audio/bpm ---
-	// Sends: estimated tempo in beats per minute
-	OSCdef(\fwdBPM, { |msg|
-		dests.do({ |d| d.sendMsg('/audio/bpm', msg[3].asFloat) });
-	}, '/tr_bpm');
-
-	// --- Chromagram → /audio/chroma ---
-	// Sends: 12 floats (energy of C, C#, D, D#, E, F, F#, G, G#, A, A#, B)
-	// msg[3] through msg[14] = pitch classes 0 (C) through 11 (B)
-	OSCdef(\fwdChroma, { |msg|
-		dests.do({ |d| d.sendMsg('/audio/chroma',
-			msg[3].asFloat, msg[4].asFloat, msg[5].asFloat, msg[6].asFloat,
-			msg[7].asFloat, msg[8].asFloat, msg[9].asFloat, msg[10].asFloat,
-			msg[11].asFloat, msg[12].asFloat, msg[13].asFloat, msg[14].asFloat
-		) });
-	}, '/tr_chroma');
+	// --- OSCdef forwarders (only registered for enabled features) ---
+	if(featAmp, {
+		OSCdef(\fwdAmp, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/amplitude', msg[3].asFloat) });
+		}, '/tr_amp');
+	});
+	if(featPitch, {
+		OSCdef(\fwdPitch, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/pitch', msg[3].asFloat, msg[4].asFloat) });
+		}, '/tr_pitch');
+	});
+	if(featOnset, {
+		OSCdef(\fwdOnset, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/onset', 1) });
+		}, '/tr_onset');
+	});
+	if(featLoud, {
+		OSCdef(\fwdLoudness, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/loudness', msg[3].asFloat) });
+		}, '/tr_loudness');
+	});
+	if(featCentroid, {
+		OSCdef(\fwdCentroid, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/spectral/centroid', msg[3].asFloat) });
+		}, '/tr_centroid');
+	});
+	if(featFlatness, {
+		OSCdef(\fwdFlatness, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/spectral/flatness', msg[3].asFloat) });
+		}, '/tr_flatness');
+	});
+	if(featMFCC, {
+		OSCdef(\fwdMFCC, { |msg|
+			var coeffs = msg[3 .. (3 + cfgMFCCCount - 1)].collect(_.asFloat);
+			dests.do({ |d| d.sendMsg(*(['/audio/mfcc'] ++ coeffs)) });
+		}, '/tr_mfcc');
+	});
+	if(featKey, {
+		OSCdef(\fwdKey, { |msg|
+			var raw, key, mode;
+			raw = msg[3].asInteger;
+			key = raw % 12;
+			mode = if(raw < 12, { 1 }, { 0 });
+			dests.do({ |d| d.sendMsg('/audio/key', key, mode) });
+		}, '/tr_key');
+	});
+	if(featBeat, {
+		OSCdef(\fwdBeat, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/beat', 1) });
+		}, '/tr_beat');
+		OSCdef(\fwdBPM, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/bpm', msg[3].asFloat) });
+		}, '/tr_bpm');
+	});
+	if(featChroma, {
+		OSCdef(\fwdChroma, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/chroma',
+				msg[3].asFloat, msg[4].asFloat, msg[5].asFloat, msg[6].asFloat,
+				msg[7].asFloat, msg[8].asFloat, msg[9].asFloat, msg[10].asFloat,
+				msg[11].asFloat, msg[12].asFloat, msg[13].asFloat, msg[14].asFloat
+			) });
+		}, '/tr_chroma');
+	});
 
 	"  All OSCdefs registered.".postln;
 	("  Sending OSC to " ++ dests.size.asString ++ " destination(s)").postln;

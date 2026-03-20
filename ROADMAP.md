@@ -123,5 +123,6 @@ installed), how to tune, and Output Reference (what the reciever of the OSC mess
 27. [🟢] - Remove MFCC Timbre card from the visualization UI.
 28. [🟢] - Organize the visualization UI into meaningful groupings: (Tempo + Onsets), (Key + Pitch + Chromagram), (Loudness + Spectral Centroid + Noisiness).
 29. [🔵] - When i click on any of the cards in the visualization UI, I would like to open a modal popup showing the all of the specific OSC commands being send and their values in real time, so it's easy for me to program the OSC reciever.
+30. [⚪] - Modularize viz.html — split the monolithic file into separate CSS, JS, and HTML files for easier maintenance. Extract styles into a stylesheet, JS into modules (state, websocket, renderers, modal, public view), and keep viz.html as a slim shell that imports them.
 
 

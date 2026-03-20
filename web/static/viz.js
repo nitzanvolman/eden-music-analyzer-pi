@@ -289,14 +289,20 @@ function sizeCanvases() {
     canvases.pitchRibbon = { canvas: pitchCanvas, ctx: pitchCanvas.getContext('2d'), dpr, w: pw, h: ph };
   }
 
-  // Chroma canvas: sized from its rendered bounding rect
+  // Chroma canvas: sized from its rendered bounding rect.
+  // Must set explicit CSS width/height to prevent intrinsic pixel buffer
+  // size from overriding the flex-allocated size.
   const chromaCanvas = document.getElementById('chromaCanvas');
   if (chromaCanvas) {
     const rect = chromaCanvas.getBoundingClientRect();
+    const cw = rect.width;
+    const ch = rect.height;
     const ctx = chromaCanvas.getContext('2d');
-    chromaCanvas.width = rect.width * dpr;
-    chromaCanvas.height = rect.height * dpr;
-    canvases.chromaCanvas = { canvas: chromaCanvas, ctx, dpr };
+    chromaCanvas.style.width = cw + 'px';
+    chromaCanvas.style.height = ch + 'px';
+    chromaCanvas.width = cw * dpr;
+    chromaCanvas.height = ch * dpr;
+    canvases.chromaCanvas = { canvas: chromaCanvas, ctx, dpr, w: cw, h: ch };
   }
 }
 window.addEventListener('resize', sizeCanvases);
@@ -362,12 +368,11 @@ function drawPitchRibbon() {
 }
 
 function drawChroma() {
-  const { canvas, ctx, dpr } = canvases.chromaCanvas || {};
-  if (!ctx) return;
+  const entry = canvases.chromaCanvas;
+  if (!entry || !entry.ctx) return;
+  const { canvas, ctx, dpr, w, h } = entry;
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const w = canvas.clientWidth;
-  const h = canvas.clientHeight;
   const barW = (w - 11 * 3) / 12; // 3px gap
   const maxVal = Math.max(...state.chroma, 0.01);
 

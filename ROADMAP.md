@@ -98,3 +98,19 @@ installed), how to tune, and Output Reference (what the reciever of the OSC mess
 21. [🟢] - Web interface: log viewer screen — view logs in real-time from the web UI.
 22. [🟢] - CPU temperature monitoring + throttle alerts — expose Pi temp via web UI, warn when overheating.
 
+## Unit Tests
+
+Each task: write tests first (they should fail), then make them pass. Use pytest + aiohttp test client. Add pytest + pytest-aiohttp to requirements.txt in Task 23.
+
+23. [⚪] - Test setup: add pytest + pytest-aiohttp to requirements.txt, create tests/ directory with conftest.py (aiohttp test client fixture, temp config files, mock SC_OSC_DIR).
+24. [⚪] - Test: GET /api/ping returns {"status": "ok"} with 200.
+25. [⚪] - Test: GET /api/health returns uptime_seconds (> 0), status "ok", load_avg (list), memory (dict), disk (dict). Verify cpu_temp_c is a float or absent. Verify temp_alert is "warning"/"critical"/absent based on thresholds.
+26. [⚪] - Test: GET /api/config returns config and defaults dicts. POST /api/config with valid SC_ keys writes to config.env and returns updated keys. POST with non-SC_ keys returns 400. POST with newline in value returns 400. POST with invalid JSON returns 400.
+27. [⚪] - Test: config file parsing (_parse_env_file): handles comments, blank lines, KEY=VALUE, values containing "=". Writing (_write_env_file): preserves comments/structure from template, uncomments matching keys, appends unknown keys.
+28. [⚪] - Test: POST /api/restart returns {"status": "restarting"} with a method field. Mock subprocess to avoid actually restarting. Verify systemd path is tried first, pkill fallback works.
+29. [⚪] - Test: GET /api/logs returns lines array. Verify file param validation (only "analyzer"/"web" accepted, others return 400). Verify lines param caps at 500. Verify non-integer lines param defaults to 100. Verify missing log file returns empty lines array.
+30. [⚪] - Test: GET /api/osc/latest returns a dict. Verify it reflects data pushed through the OSC bridge (_latest dict). Test get_latest() and register_ws/unregister_ws lifecycle.
+31. [⚪] - Test: WebSocket /ws/osc — connect, receive snapshot of latest values, verify JSON format {address, args, t}. Verify new OSC data is broadcast to connected client. Verify disconnect cleanup (unregister_ws).
+32. [⚪] - Test: static file serving — GET / returns HTML (index.html). GET /static/viz.html returns 200. GET /static/nonexistent returns 404.
+33. [⚪] - Test: OSC bridge dispatcher routes /audio/* messages to _handle_osc. Verify _latest is updated. Verify unknown addresses (e.g. /foo) are not stored.
+

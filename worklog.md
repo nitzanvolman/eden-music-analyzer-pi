@@ -46,3 +46,4 @@
 - [Task #12e] ✅ (wrapped WS sends in _safe_send to avoid noisy log warnings, used get_running_loop instead of deprecated get_event_loop)
 - [Task #12] All subtasks (12a-12e) complete. Web server setup done.
 - [Task #13] Created config.html — configuration control page with grouped sections (OSC, audio, FFT, amplitude, pitch, onset, MFCC, key, beat, triggers, features, test mode, web). Uses dropdowns for enums/toggles, text inputs for values. Highlights modified fields. Save button writes via POST /api/config, restart button calls POST /api/restart. Shows extra keys not in known sections. Added nav links between pages.
+- [Task #13] ✅ (removed dead code in save(), added FFT_SIZE dropdown)

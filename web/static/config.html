@@ -69,6 +69,7 @@ const SECTIONS = [
 
 // Select options for specific keys
 const SELECT_OPTIONS = {
+    SC_FFT_SIZE: ["512", "1024", "2048", "4096"],
     SC_ONSET_ALGORITHM: ["rcomplex", "complex", "phase", "wphase", "mkl", "magsum", "power"],
     SC_BEAT_LOCK: ["0", "1"],
     SC_TEST_MODE: ["0", "1"],
@@ -178,18 +179,6 @@ async function loadConfig() {
 
 async function save() {
     const inputs = document.querySelectorAll('.field input, .field select');
-    const changes = {};
-    inputs.forEach(input => {
-        const key = input.dataset.key;
-        const val = input.value;
-        if (val && val !== (defaults[key] || '')) {
-            changes[key] = val;
-        } else if (val) {
-            changes[key] = val;
-        }
-    });
-
-    // Send all values that have an actual value set
     const payload = {};
     inputs.forEach(input => {
         if (input.value) payload[input.dataset.key] = input.value;

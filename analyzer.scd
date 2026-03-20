@@ -25,29 +25,46 @@
 (
 // In SC, everything between ( ) is executed as one block.
 // "var" declares local variables — SC requires all vars at the top of their scope.
-var destIP, destPort, dest;
+var destStr, dests;
 
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
-// Read OSC destination from environment variables (set in config.env).
-// The "?" operator means "if nil (not set), use this default instead."
-// .getenv reads a system environment variable by name.
-// .asInteger converts a string like "9000" to the number 9000.
-destIP   = "SC_OSC_DEST_IP".getenv ? "127.0.0.1";
-destPort = ("SC_OSC_DEST_PORT".getenv ? "9000").asInteger;
+// Read OSC destinations from environment variables (set in config.env).
+//
+// SC_OSC_DESTINATIONS: comma-separated ip:port pairs (preferred).
+//   Example: "127.0.0.1:9000,192.168.1.50:9000"
+//
+// Falls back to legacy SC_OSC_DEST_IP / SC_OSC_DEST_PORT if not set.
+//
+// dests = an Array of NetAddr objects. All OSC messages are sent to every
+// destination in this array (broadcast pattern).
 
-// NetAddr = network address. This is where all OSC messages will be sent.
-// Change destIP to your lighting controller / VJ software / other machine's IP.
-dest = NetAddr(destIP, destPort);
+destStr = "SC_OSC_DESTINATIONS".getenv;
+
+if(destStr.notNil and: { destStr.size > 0 }, {
+	// Parse comma-separated ip:port pairs
+	dests = destStr.split($,).collect({ |pair|
+		var parts = pair.stripWhiteSpace.split($:);
+		var ip = parts[0];
+		var port = parts[1].asInteger;
+		NetAddr(ip, port);
+	});
+}, {
+	// Legacy single-destination fallback
+	var destIP = "SC_OSC_DEST_IP".getenv ? "127.0.0.1";
+	var destPort = ("SC_OSC_DEST_PORT".getenv ? "9000").asInteger;
+	dests = [NetAddr(destIP, destPort)];
+});
 
 // --- Startup banner (printed to console / log) ---
 "==============================================".postln;
 "  SC-OSC Audio Analyzer".postln;
 "==============================================".postln;
-// "++" concatenates strings in SC
-("  OSC destination: " ++ destIP ++ ":" ++ destPort).postln;
 ("  Date: " ++ Date.localtime.asString).postln;
+dests.do({ |d|
+	("  OSC destination: " ++ d.hostname ++ ":" ++ d.port).postln;
+});
 "----------------------------------------------".postln;
 
 // ============================================================================
@@ -336,8 +353,8 @@ s.waitForBoot({
 	//   msg[4] = second data value (if any)
 	//   ...etc
 	//
-	// dest.sendMsg sends an OSC message to the external destination.
-	// The first argument is the address, the rest are the values.
+	// dests.do iterates over all configured OSC destinations and sends
+	// the message to each one (broadcast pattern).
 	//
 	// TO DISABLE A FEATURE: comment out both its SendReply (above) and
 	// its OSCdef (below). This saves both CPU and network bandwidth.
@@ -345,46 +362,46 @@ s.waitForBoot({
 
 	// --- Amplitude → /audio/amplitude ---
 	OSCdef(\fwdAmp, { |msg|
-		dest.sendMsg('/audio/amplitude', msg[3].asFloat);
+		dests.do({ |d| d.sendMsg('/audio/amplitude', msg[3].asFloat) });
 	}, '/tr_amp');
 
 	// --- Pitch → /audio/pitch ---
 	// Sends: frequency (Hz), hasFreq (0.0-1.0 confidence)
 	OSCdef(\fwdPitch, { |msg|
-		dest.sendMsg('/audio/pitch', msg[3].asFloat, msg[4].asFloat);
+		dests.do({ |d| d.sendMsg('/audio/pitch', msg[3].asFloat, msg[4].asFloat) });
 	}, '/tr_pitch');
 
 	// --- Onset → /audio/onset ---
 	// Sends: 1 (fires only when an onset is detected)
 	OSCdef(\fwdOnset, { |msg|
-		dest.sendMsg('/audio/onset', 1);
+		dests.do({ |d| d.sendMsg('/audio/onset', 1) });
 	}, '/tr_onset');
 
 	// --- Loudness → /audio/loudness ---
 	OSCdef(\fwdLoudness, { |msg|
-		dest.sendMsg('/audio/loudness', msg[3].asFloat);
+		dests.do({ |d| d.sendMsg('/audio/loudness', msg[3].asFloat) });
 	}, '/tr_loudness');
 
 	// --- Spectral Centroid → /audio/spectral/centroid ---
 	OSCdef(\fwdCentroid, { |msg|
-		dest.sendMsg('/audio/spectral/centroid', msg[3].asFloat);
+		dests.do({ |d| d.sendMsg('/audio/spectral/centroid', msg[3].asFloat) });
 	}, '/tr_centroid');
 
 	// --- Spectral Flatness → /audio/spectral/flatness ---
 	OSCdef(\fwdFlatness, { |msg|
-		dest.sendMsg('/audio/spectral/flatness', msg[3].asFloat);
+		dests.do({ |d| d.sendMsg('/audio/spectral/flatness', msg[3].asFloat) });
 	}, '/tr_flatness');
 
 	// --- MFCC → /audio/mfcc ---
 	// Sends: 13 float coefficients
 	// msg[3] through msg[15] = coefficients 0 through 12
 	OSCdef(\fwdMFCC, { |msg|
-		dest.sendMsg('/audio/mfcc',
+		dests.do({ |d| d.sendMsg('/audio/mfcc',
 			msg[3].asFloat, msg[4].asFloat, msg[5].asFloat, msg[6].asFloat,
 			msg[7].asFloat, msg[8].asFloat, msg[9].asFloat, msg[10].asFloat,
 			msg[11].asFloat, msg[12].asFloat, msg[13].asFloat, msg[14].asFloat,
 			msg[15].asFloat
-		);
+		) });
 	}, '/tr_mfcc');
 
 	// --- Key → /audio/key ---
@@ -397,34 +414,34 @@ s.waitForBoot({
 		raw = msg[3].asInteger;
 		key = raw % 12;                    // pitch class: 0=C, 1=C#, ... 11=B
 		mode = if(raw < 12, { 1 }, { 0 }); // 1=major, 0=minor
-		dest.sendMsg('/audio/key', key, mode);
+		dests.do({ |d| d.sendMsg('/audio/key', key, mode) });
 	}, '/tr_key');
 
 	// --- Beat → /audio/beat ---
 	// Sends: 1 (fires only on detected beats)
 	OSCdef(\fwdBeat, { |msg|
-		dest.sendMsg('/audio/beat', 1);
+		dests.do({ |d| d.sendMsg('/audio/beat', 1) });
 	}, '/tr_beat');
 
 	// --- BPM → /audio/bpm ---
 	// Sends: estimated tempo in beats per minute
 	OSCdef(\fwdBPM, { |msg|
-		dest.sendMsg('/audio/bpm', msg[3].asFloat);
+		dests.do({ |d| d.sendMsg('/audio/bpm', msg[3].asFloat) });
 	}, '/tr_bpm');
 
 	// --- Chromagram → /audio/chroma ---
 	// Sends: 12 floats (energy of C, C#, D, D#, E, F, F#, G, G#, A, A#, B)
 	// msg[3] through msg[14] = pitch classes 0 (C) through 11 (B)
 	OSCdef(\fwdChroma, { |msg|
-		dest.sendMsg('/audio/chroma',
+		dests.do({ |d| d.sendMsg('/audio/chroma',
 			msg[3].asFloat, msg[4].asFloat, msg[5].asFloat, msg[6].asFloat,
 			msg[7].asFloat, msg[8].asFloat, msg[9].asFloat, msg[10].asFloat,
 			msg[11].asFloat, msg[12].asFloat, msg[13].asFloat, msg[14].asFloat
-		);
+		) });
 	}, '/tr_chroma');
 
 	"  All OSCdefs registered.".postln;
-	("  Sending OSC to " ++ destIP ++ ":" ++ destPort).postln;
+	("  Sending OSC to " ++ dests.size.asString ++ " destination(s)").postln;
 	"  Analyzer running. Ctrl+C to stop.".postln;
 
 // onFailure: runs if the audio server fails to boot

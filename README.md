@@ -11,9 +11,10 @@ See **[INSTALL.md](INSTALL.md)** for full installation instructions (quick insta
 Edit `~/sc-osc/config.env`:
 
 ```bash
-# OSC destination — where analysis messages are sent
-SC_OSC_DEST_IP=192.168.1.100
-SC_OSC_DEST_PORT=9000
+# OSC destinations — comma-separated ip:port pairs (sends to all)
+SC_OSC_DESTINATIONS=192.168.1.100:9000
+# Multiple destinations example:
+# SC_OSC_DESTINATIONS=192.168.1.100:9000,192.168.1.200:9000,10.0.0.5:7000
 
 # Onset detection threshold (0.0 - 1.0, lower = more sensitive)
 # SC_ONSET_THRESHOLD=0.5

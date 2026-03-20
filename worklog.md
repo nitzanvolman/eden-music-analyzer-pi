@@ -18,3 +18,4 @@
 - [Task #3] ✅
 - [Task #4] Created config_template.env with all tweakable parameters from analyzer.scd: audio input channel, FFT buffer size, amplitude attack/release times, pitch min/max frequency, onset detection algorithm, MFCC coefficient count, key decay time, beat tracker lock mode, and trigger rates for fast/medium/slow features. Existing parameters (OSC dest IP/port, JACK device, onset threshold) are also included.
 - [Task #4] ✅ (reviewer note: Chromagram.kr FFT size on line 296 should track SC_FFT_SIZE when Task 6 wires env vars)
+- [Task #5] Added multi-destination OSC support. New SC_OSC_DESTINATIONS env var accepts comma-separated ip:port pairs. Falls back to legacy SC_OSC_DEST_IP/SC_OSC_DEST_PORT if not set. All OSCdef forwarders now iterate over the dests array (broadcast pattern). Updated config_template.env, README, and analyzer.scd.

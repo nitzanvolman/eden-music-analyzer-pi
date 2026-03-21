@@ -1,94 +1,90 @@
 # Building SuperCollider 3.14.1 + sc3-plugins on macOS
 
-This guide builds SuperCollider and sc3-plugins (including Chromagram) from source on macOS, pinned to version 3.14.1 to match the pre-built SuperCollider.app.
-
-## Why build from source?
-
-The Homebrew cask (`brew install --cask supercollider`) installs a pre-built SuperCollider.app, but its sc3-plugins may not include all UGens needed by this project (notably Chromagram from SCMIRUGens). Building sc3-plugins from source against the matching SC version ensures all required UGens are available.
+Build SuperCollider and sc3-plugins from source on macOS, pinned to version 3.14.1.
 
 ## Prerequisites
 
 ```bash
-brew install cmake
-```
-
-You also need SuperCollider.app installed (for the runtime):
-
-```bash
-brew install --cask supercollider
-```
-
-Check your installed version — this guide targets 3.14.1:
-
-```bash
-ls /Applications/SuperCollider.app/Contents/Info.plist
-# Open SuperCollider IDE → Help → About to confirm version
+brew install cmake qt@5 libsndfile fftw
 ```
 
 ## Build directory
-
-All source clones go in a single directory. Adjust the path if you prefer somewhere else:
 
 ```bash
 export SC_BUILD_DIR=~/sc-build
 mkdir -p "$SC_BUILD_DIR"
 ```
 
-## Step 1: Clone SuperCollider source (headers only)
-
-We need the SC source headers to compile plugins against. Must match your installed version.
+## Step 1: Build SuperCollider
 
 ```bash
 cd "$SC_BUILD_DIR"
-git clone --depth 1 --recurse-submodules --branch Version-3.14.1 \
+git clone --recurse-submodules --branch Version-3.14.1 \
   https://github.com/supercollider/supercollider.git sc-source
+
+cd sc-source
+mkdir build && cd build
+
+cmake .. \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_PREFIX_PATH="$(brew --prefix qt@5)" \
+  -DSUPERNOVA=OFF \
+  -DSC_EL=OFF \
+  -DSC_VIM=OFF
+
+make -j$(sysctl -n hw.ncpu)
 ```
 
-## Step 2: Clone and build sc3-plugins
+This produces `SuperCollider.app` in the build directory. Build takes 10–20 minutes.
 
-sc3-plugins includes all the UGens this project uses beyond SC core: Loudness, Onsets, MFCC, SpecCentroid, SpecFlatness, KeyTrack, BeatTrack2, and Chromagram (via the bundled SCMIRUGens).
+### Install
+
+```bash
+# Remove old Homebrew version if present
+brew uninstall --cask supercollider 2>/dev/null || true
+
+# Copy to Applications
+cp -R "SuperCollider.app" /Applications/
+```
+
+## Step 2: Build sc3-plugins
+
+sc3-plugins provides the UGens this project needs beyond SC core: Loudness, Onsets, MFCC, SpecCentroid, SpecFlatness, KeyTrack, BeatTrack2, and Chromagram (via bundled SCMIRUGens).
 
 ```bash
 cd "$SC_BUILD_DIR"
-git clone --depth 1 --recurse-submodules \
+git clone --recurse-submodules \
   https://github.com/supercollider/sc3-plugins.git
 
 cd sc3-plugins
 mkdir build && cd build
-cmake .. -DSC_PATH="$SC_BUILD_DIR/sc-source" -DCMAKE_BUILD_TYPE=Release
+
+cmake .. \
+  -DSC_PATH="$SC_BUILD_DIR/sc-source" \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DSUPERNOVA=OFF
+
 make -j$(sysctl -n hw.ncpu)
 ```
 
-Build takes 2–5 minutes depending on your Mac.
+Build takes 2–5 minutes.
 
-### Verify Chromagram was built
-
-```bash
-ls ../SCMIRUGens/
-# Should contain Chromagram.cpp and other source files
-
-find . -name "*.scx" | head -5
-# Should list compiled UGen binaries
-```
-
-## Step 3: Install plugins
-
-Copy the compiled plugins and SC class files to your SuperCollider Extensions directory:
+### Install plugins
 
 ```bash
 SC_EXT="$HOME/Library/Application Support/SuperCollider/Extensions/SC3plugins"
 mkdir -p "$SC_EXT"
 
-# Copy compiled UGen binaries
+# Compiled UGen binaries
 find . -name "*.scx" -exec cp {} "$SC_EXT/" \;
 
-# Copy SC class files (needed for sclang to know about the UGens)
+# SC class files (sclang needs these to know about the UGens)
 find .. -name "*.sc" -not -path "*/build/*" -not -path "*/.git/*" -exec cp {} "$SC_EXT/" \;
 ```
 
-## Step 4: Verify
+## Step 3: Verify
 
-Restart SuperCollider (quit and relaunch), then evaluate in the IDE or sclang:
+Launch SuperCollider from `/Applications/SuperCollider.app`, then evaluate:
 
 ```supercollider
 // Should all print: true
@@ -98,11 +94,9 @@ Restart SuperCollider (quit and relaunch), then evaluate in the IDE or sclang:
 'KeyTrack'.asClass.notNil;
 ```
 
-If you see `API version mismatch` errors on startup, you built against the wrong SC source version. Re-clone with the correct `--branch Version-X.Y.Z` tag matching your SuperCollider.app.
+Check for API version mismatch errors in the post window on startup — there should be none since SC and plugins were built from the same source.
 
 ## Cleanup (optional)
-
-The source directories are only needed for building. You can remove them after install:
 
 ```bash
 rm -rf "$SC_BUILD_DIR"
@@ -110,15 +104,15 @@ rm -rf "$SC_BUILD_DIR"
 
 ## Troubleshooting
 
-**API version mismatch**
-The sc3-plugins were built against a different SC version than your installed SuperCollider.app. Check your app version and re-clone the SC source with the matching tag:
+**Qt not found during cmake**
+Make sure Qt 5 is installed and the cmake prefix path is correct:
 ```bash
-# List available version tags
-git ls-remote --tags https://github.com/supercollider/supercollider.git | grep 'Version-3'
+brew install qt@5
+echo $(brew --prefix qt@5)  # should print something like /opt/homebrew/opt/qt@5
 ```
 
-**Chromagram class not found**
-The `.sc` class files weren't copied to the Extensions directory. Re-run the class file copy step and restart SuperCollider.
+**API version mismatch after upgrade**
+If you later upgrade SuperCollider.app (e.g., via Homebrew), you must rebuild sc3-plugins against the new version. The SC source tag must match the app version.
 
-**cmake can't find SC headers**
-Make sure `-DSC_PATH` points to the directory containing `SCVersion.txt` (the root of the SC source clone, not a subdirectory).
+**Chromagram class not found**
+The `.sc` class files weren't copied to the Extensions directory. Re-run the plugin install step and restart SuperCollider.

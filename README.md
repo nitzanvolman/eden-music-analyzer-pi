@@ -1,5 +1,7 @@
 # Real-Time Audio Analysis on Raspberry Pi with SuperCollider for Eden Art Car
 
+![Eden Art Car](eden.jpg)
+
 SuperCollider-based audio analyzer that runs headless on a Raspberry Pi and emits OSC messages for every audio feature it extracts. Point any OSC-capable application at the Pi and get amplitude, pitch, onsets, beats, MFCC, key, chroma, and spectral descriptors in real time.
 
 ## Install

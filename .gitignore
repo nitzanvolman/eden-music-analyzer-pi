@@ -5,3 +5,5 @@ config.env
 logs/
 *.pyc
 __pycache__/
+*.mov
+*.mp4

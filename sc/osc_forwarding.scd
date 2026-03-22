@@ -159,14 +159,8 @@ if(~feat[\scene], {
 		// Adaptive threshold: trigger when novelty exceeds average * sensitivity
 		threshold = avg * ~cfg[\sceneSensitivity];
 
-		// Debug: log every 5 seconds
-		if((now % 5) < 0.15, {
-			("  [scene] novelty=" ++ novelty.round(0.001) ++ " avg=" ++ avg.round(0.001) ++ " thresh=" ++ threshold.round(0.001)).postln;
-		});
-
 		if((novelty > threshold) and: { (now - lastTrigTime) > ~cfg[\sceneCooldown] } and: { avg > 0 }, {
 			lastTrigTime = now;
-			("  [scene] *** TRIGGERED *** novelty=" ++ novelty.round(0.001)).postln;
 			~dests.do({ |d| d.sendMsg('/audio/scene_change', 1) });
 		});
 

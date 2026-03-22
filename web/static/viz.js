@@ -25,10 +25,11 @@ const state = {
   centroid: 0, flatness: 0, bpm: 0,
   key: 0, mode: 1,
   chroma: new Float32Array(12),
+  vocal: 0,
 };
 
 // Smoothed values for display
-const smooth = { amp: 0, loud: 0, centroid: 0, flatness: 0 };
+const smooth = { amp: 0, loud: 0, centroid: 0, flatness: 0, vocal: 0 };
 const SMOOTH = 0.3; // lower = smoother
 
 // ============================================================
@@ -111,6 +112,9 @@ function handleOSC(addr, args) {
       break;
     case '/audio/bpm':
       state.bpm = args[0];
+      break;
+    case '/audio/vocal':
+      state.vocal = args[0];
       break;
     case '/audio/key':
       state.key = args[0];
@@ -219,6 +223,7 @@ function updateDOM() {
   smooth.loud = lerp(smooth.loud, state.loud, SMOOTH);
   smooth.centroid = lerp(smooth.centroid, state.centroid, SMOOTH);
   smooth.flatness = lerp(smooth.flatness, state.flatness, SMOOTH);
+  smooth.vocal = lerp(smooth.vocal, state.vocal, SMOOTH);
 
   // Amplitude
   document.getElementById('ampVal').textContent = smooth.amp.toFixed(2);
@@ -258,6 +263,9 @@ function updateDOM() {
 
   // BPM
   document.getElementById('bpmVal').textContent = state.bpm > 0 ? Math.round(state.bpm) : '---';
+
+  // Vocal likelihood
+  document.getElementById('vocalBar').style.width = (smooth.vocal * 100) + '%';
 
   // Key
   document.getElementById('keyNote').textContent = NOTE_NAMES[state.key] || '--';

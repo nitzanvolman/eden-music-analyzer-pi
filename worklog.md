@@ -102,3 +102,4 @@
 - [Task #35] ❌ - Review found BPF rq parameter was inverted: used maxFreq/minFreq (13.33) instead of (maxFreq-minFreq)/center (3.38), making the filter far too wide. Fixed to match existing BPF patterns (snare, melody onsets).
 - [Task #35] Added vocal likelihood detection: BPF to vocal range (300–4000Hz), combines Pitch.kr confidence + inverse SpecFlatness + amplitude gate into a 0–1 score on /audio/vocal. Feature toggle SC_FEATURE_VOCAL, configurable freq range. Test mode, OSC forwarding, config templates all updated.
 - [Task #35] ✅
+- [Task #36] Combined Tempo and Onsets into a single "Rhythm" card. BPM display inline with card label, onset grid below, vocal likelihood meter bar at bottom. Card spans full grid width. Added vocal state tracking, smoothing, and bar rendering in viz.js. New CSS for rhythm-header, bpm-display, vocal-bar, and vocal meter fill gradient.

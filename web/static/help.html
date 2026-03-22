@@ -184,7 +184,7 @@ h1 + p { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 2rem; }
   <h2>Trigger Rates</h2>
   <p>Features are grouped by how often they send data:</p>
   <p class="detail"><strong>Fast (default 30 Hz):</strong> amplitude, pitch, loudness, centroid, flatness — responsive features for real-time reactivity.</p>
-  <p class="detail"><strong>Medium (default 10 Hz):</strong> MFCC, chromagram — computationally heavier, lower rate is sufficient.</p>
+  <p class="detail"><strong>Medium (default 10 Hz):</strong> MFCC, chromagram, energy direction, vocal likelihood — lower rate is sufficient for these features.</p>
   <p class="detail"><strong>Slow (default 2 Hz):</strong> key detection — musical key changes slowly, high rate would be noisy.</p>
   <p class="detail"><strong>Event-driven:</strong> onset, beat — fire only when detected, not on a timer.</p>
   <p class="detail"><strong>Config:</strong> SC_TRIG_RATE_FAST, SC_TRIG_RATE_MEDIUM, SC_TRIG_RATE_SLOW. Lower rates save CPU and network bandwidth.</p>

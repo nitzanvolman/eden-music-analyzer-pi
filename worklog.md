@@ -107,6 +107,7 @@
 - [Task #37] ✅
 - [Task #38] ❌ - Review found duplicate margin-top on .meter: the existing margin-top:0.5rem was overriding the new margin-top:auto. Removed the stale 0.5rem declaration.
 - [Task #38] ✅
+- [Task #39] ✅ — also added energy direction and vocal to the trigger rate summary in help.html.
 - [Task #39] Documentation review: added scene change, energy direction, vocal likelihood, and input conditioning to README.md (OSC table + analysis details), help.html (new Scene & Energy and Input Conditioning sections, updated feature toggles list), and CLAUDE.md (updated config areas and data flow).
 - [Task #38] Made all .card elements flex-column, added margin-top:auto to .meter and .bright-track so bars align to the bottom of their cards regardless of content height. Verified no regressions on beat-card, scene-card, pitch-card (absolute positioning), or vocal-bar meter (flex-row parent).
 - [Task #37] Added Scene/Mood card on first row: scene change flash indicator (gold flash on spectral novelty triggers) and energy direction track (breaking ← center → building, with sliding cyan marker). Full-width card. State tracking, smoothing, OSC handling, and DOM updates in viz.js. CSS for scene-card, scene-change-indicator, energy-direction track/marker. BPM display inline with card label, onset grid below, vocal likelihood meter bar at bottom. Card spans full grid width. Added vocal state tracking, smoothing, and bar rendering in viz.js. New CSS for rhythm-header, bpm-display, vocal-bar, and vocal meter fill gradient.

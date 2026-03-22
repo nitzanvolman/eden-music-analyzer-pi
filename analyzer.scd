@@ -557,7 +557,10 @@ s.waitForBoot({
 		// FEATURE: Beat tracking (tempo and beat positions)
 		// ====================================================================
 		if(featBeat, {
-			bt2 = BeatTrack2.kr(chain, cfgBeatLock);
+			// BeatTrack2.kr(busindex, numfeatures, windowsize, phaseaccuracy, lock)
+			// busindex = FFT buffer, numfeatures = spectral features (default 4),
+			// lock: 0 = free (adapts quickly), 1 = locked (steady tempo)
+			bt2 = BeatTrack2.kr(chain, 4, 2.0, 0.02, cfgBeatLock);
 			beatTrig = bt2[0];
 			bpm = bt2[3];
 			SendReply.kr(beatTrig, '/tr_beat', [1]);

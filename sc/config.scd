@@ -65,6 +65,7 @@ if(destStr.notNil and: { destStr.size > 0 }, {
 	chromaMinFreq: ("SC_CHROMA_MIN_FREQ".getenv ? "200").asFloat,
 	chromaMaxFreq: ("SC_CHROMA_MAX_FREQ".getenv ? "4000").asFloat,
 	chromaFFTSize: ("SC_CHROMA_FFT_SIZE".getenv ? "4096").asInteger,
+	chromaExponent: ("SC_CHROMA_EXPONENT".getenv ? "1.5").asFloat,
 );
 
 // --- Feature toggles (1 = enabled, 0 = disabled) ---

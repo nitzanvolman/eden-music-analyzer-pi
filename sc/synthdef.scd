@@ -242,6 +242,8 @@ SynthDef(\audioAnalyzer, {
 		// Dedicated larger FFT for chromagram analysis
 		chromaChain = FFT(LocalBuf(~cfg[\chromaFFTSize]), sigChroma);
 		chroma = 'Chromagram'.asClass.kr(chromaChain, ~cfg[\chromaFFTSize]);
+		// Apply exponent for contrast: dominant notes pop, weak ones suppressed
+		chroma = chroma.pow(~cfg[\chromaExponent]);
 		SendReply.kr(trigMedium, '/tr_chroma', chroma);
 	});
 

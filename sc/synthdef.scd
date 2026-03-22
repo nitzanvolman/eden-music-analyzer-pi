@@ -17,7 +17,7 @@ SynthDef(\audioAnalyzer, {
 	var amp, freq, hasFreq, loud, centroid, flatness;
 	var mfcc, keyRaw, beatTrig, bpm;
 	var chroma;
-	var sceneChange, energyFast, energySlow, energyDir;
+	var energyFast, energySlow, energyDir;
 	var vocalLikelihood;
 
 	// --- Trigger clocks (rates from config) ---

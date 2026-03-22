@@ -317,33 +317,6 @@ canvas {
 
 /* === PITCH RIBBON === */
 /* === SECTION ROWS (fixed column proportions) === */
-/* === RHYTHM COMBINED CARD === */
-.rhythm-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 0.4rem;
-}
-.rhythm-header .card-label {
-  margin-bottom: 0;
-}
-.bpm-display {
-  display: flex;
-  align-items: baseline;
-  gap: 0.3rem;
-}
-.bpm-value {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 1.6rem;
-  color: var(--accent);
-}
-.bpm-unit {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 0.55rem;
-  letter-spacing: 0.15em;
-  color: var(--text-dim);
-  text-transform: uppercase;
-}
 /* === SCENE / MOOD CARD === */
 .rhythm-scene-row {
   grid-column: 1 / -1;

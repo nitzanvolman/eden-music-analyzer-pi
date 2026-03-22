@@ -273,9 +273,6 @@ function updateDOM() {
   document.getElementById('flatVal').textContent = smooth.flatness.toFixed(2);
   document.getElementById('flatBar').style.width = (smooth.flatness * 100) + '%';
 
-  // BPM
-  document.getElementById('bpmVal').textContent = state.bpm > 0 ? Math.round(state.bpm) : '---';
-
   // Vocal likelihood — light the vocal pip when score is high
   const vocalEl = document.getElementById('onset-vocal');
   if (vocalEl) {

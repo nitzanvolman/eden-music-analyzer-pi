@@ -601,9 +601,10 @@ s.waitForBoot({
 		// Produces a 0–1 "vocal likelihood" score. Also triggers on
 		// tonal synth leads — acceptable for EDM lighting use.
 		if(featVocal, {
+			var vocalCenter = (cfgVocalMinFreq * cfgVocalMaxFreq).sqrt;
 			var sigVocal = BPF.ar(sig,
-				(cfgVocalMinFreq * cfgVocalMaxFreq).sqrt,  // geometric center
-				cfgVocalMaxFreq / cfgVocalMinFreq           // bandwidth ratio
+				vocalCenter,                                             // geometric center
+				(cfgVocalMaxFreq - cfgVocalMinFreq) / vocalCenter        // rq = bandwidth / center
 			);
 			var fftVocal = FFT(LocalBuf(cfgFFTSize), sigVocal);
 			var vocalFreq, vocalHasFreq, vocalFlatness, vocalAmp;

@@ -227,19 +227,20 @@ SynthDef(\audioAnalyzer, {
 	// better frequency resolution. Filters out percussion, sub-bass,
 	// and noise that would splash energy across all pitch classes.
 	if(~feat[\chroma] and: { 'Chromagram'.asClass.notNil }, {
-		var chromaCenter = (~cfg[\chromaMinFreq] * ~cfg[\chromaMaxFreq]).sqrt;
-		var sigChroma = BPF.ar(sig,
+		var chromaCenter, sigChroma, chromaFlatChain, chromaFlat, tonalGate, chromaChain;
+		chromaCenter = (~cfg[\chromaMinFreq] * ~cfg[\chromaMaxFreq]).sqrt;
+		sigChroma = BPF.ar(sig,
 			chromaCenter,
 			(~cfg[\chromaMaxFreq] - ~cfg[\chromaMinFreq]) / chromaCenter
 		);
 		// Gate by spectral flatness: attenuate percussive/noisy content.
 		// Low flatness = tonal (pass through), high flatness = percussion (suppress).
-		var chromaFlatChain = FFT(LocalBuf(~cfg[\fftSize]), sigChroma);
-		var chromaFlat = SpecFlatness.kr(chromaFlatChain);
-		var tonalGate = (1 - chromaFlat).clip(0, 1).lag(0.05);
+		chromaFlatChain = FFT(LocalBuf(~cfg[\fftSize]), sigChroma);
+		chromaFlat = SpecFlatness.kr(chromaFlatChain);
+		tonalGate = (1 - chromaFlat).clip(0, 1).lag(0.05);
 		sigChroma = sigChroma * tonalGate;
 		// Dedicated larger FFT for chromagram analysis
-		var chromaChain = FFT(LocalBuf(~cfg[\chromaFFTSize]), sigChroma);
+		chromaChain = FFT(LocalBuf(~cfg[\chromaFFTSize]), sigChroma);
 		chroma = 'Chromagram'.asClass.kr(chromaChain, ~cfg[\chromaFFTSize]);
 		SendReply.kr(trigMedium, '/tr_chroma', chroma);
 	});

@@ -252,17 +252,28 @@ SynthDef(\audioAnalyzer, {
 	// ====================================================================
 	// FEATURE: Scene change detection (spectral novelty)
 	// ====================================================================
-	// Sends a continuous spectral novelty score based on how fast the
-	// spectral centroid is changing. The OSC forwarding layer applies
-	// adaptive thresholding (running average + multiplier) and cooldown
-	// to generate discrete scene change triggers.
+	// Composite novelty score: compares short-term (0.3s) vs long-term
+	// (15s) averages of both spectral centroid and loudness. A real
+	// scene change shifts both simultaneously. Single drum hits only
+	// spike one briefly and get smoothed out by the 0.3s window.
+	// The OSC forwarding layer applies adaptive thresholding + cooldown.
 	if(~feat[\scene], {
-		var sceneCentroid, sceneSlope, sceneNovelty;
+		var sceneCentroid, sceneLoud;
+		var shortCentroid, longCentroid, shortLoud, longLoud;
+		var centroidShift, loudShift, sceneNovelty;
 		sceneCentroid = SpecCentroid.kr(chain);
-		// Slope.kr gives the rate of change per control period
-		sceneSlope = Slope.kr(sceneCentroid).abs;
-		// Smooth to avoid single-frame spikes
-		sceneNovelty = sceneSlope.lag(0.2);
+		sceneLoud = Loudness.kr(chain);
+		// Short-term: fast enough to catch a drop, slow enough to ignore single hits
+		shortCentroid = Lag.kr(sceneCentroid, 0.3);
+		shortLoud = Lag.kr(sceneLoud, 0.3);
+		// Long-term: stable baseline of current scene
+		longCentroid = Lag.kr(sceneCentroid, 15.0);
+		longLoud = Lag.kr(sceneLoud, 15.0);
+		// Normalized divergence of each feature
+		centroidShift = (shortCentroid - longCentroid).abs / longCentroid.max(1);
+		loudShift = (shortLoud - longLoud).abs / longLoud.max(0.1);
+		// Composite: both shifting = scene change, one shifting = transient
+		sceneNovelty = centroidShift + loudShift;
 		SendReply.kr(trigMedium, '/tr_scene_novelty', [sceneNovelty]);
 	});
 

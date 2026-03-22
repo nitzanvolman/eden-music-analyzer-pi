@@ -105,5 +105,6 @@
 - [Task #36] ✅ — also cleaned up dead .rhythm-row CSS rules.
 - [Task #36] Combined Tempo and Onsets into a single "Rhythm" card.
 - [Task #37] ✅
+- [Task #38] ❌ - Review found duplicate margin-top on .meter: the existing margin-top:0.5rem was overriding the new margin-top:auto. Removed the stale 0.5rem declaration.
 - [Task #38] Made all .card elements flex-column, added margin-top:auto to .meter and .bright-track so bars align to the bottom of their cards regardless of content height. Verified no regressions on beat-card, scene-card, pitch-card (absolute positioning), or vocal-bar meter (flex-row parent).
 - [Task #37] Added Scene/Mood card on first row: scene change flash indicator (gold flash on spectral novelty triggers) and energy direction track (breaking ← center → building, with sliding cyan marker). Full-width card. State tracking, smoothing, OSC handling, and DOM updates in viz.js. CSS for scene-card, scene-change-indicator, energy-direction track/marker. BPM display inline with card label, onset grid below, vocal likelihood meter bar at bottom. Card spans full grid width. Added vocal state tracking, smoothing, and bar rendering in viz.js. New CSS for rhythm-header, bpm-display, vocal-bar, and vocal meter fill gradient.

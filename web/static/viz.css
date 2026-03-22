@@ -223,7 +223,6 @@ header h1 {
   overflow: hidden;
   position: relative;
   margin-top: auto;
-  margin-top: 0.5rem;
 }
 .meter-fill {
   height: 100%;

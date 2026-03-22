@@ -99,3 +99,4 @@
 - [Task #34] ❌ - Review found audio-rate to control-rate mismatch: PV_HainsworthFoote.ar output fed directly to SendReply.kr. Fixed by wrapping with A2K.kr().
 - [Task #34] Added scene change detection (PV_HainsworthFoote spectral novelty trigger on /audio/scene_change) and energy direction (short-term vs long-term amplitude comparison on /audio/energy_direction, -1 to +1 continuous value). Both in SynthDef, OSC forwarding, test mode, config.env, and config_template.env. Feature toggles: SC_FEATURE_SCENE, SC_FEATURE_ENERGY.
 - [Task #34] ✅
+- [Task #35] Added vocal likelihood detection: BPF to vocal range (300–4000Hz), combines Pitch.kr confidence + inverse SpecFlatness + amplitude gate into a 0–1 score on /audio/vocal. Feature toggle SC_FEATURE_VOCAL, configurable freq range. Test mode, OSC forwarding, config templates all updated.

@@ -37,8 +37,9 @@ var cfgGateThresh, cfgGateAttack, cfgGateRelease;
 var cfgCompEnabled, cfgCompThresh, cfgCompRatio, cfgCompAttack, cfgCompRelease;
 var featAmp, featPitch, featLoud, featCentroid, featFlatness;
 var featMFCC, featKey, featBeat, featChroma;
-var featScene, featEnergy;
+var featScene, featEnergy, featVocal;
 var cfgSceneThresh, cfgEnergyFastRelease, cfgEnergySlowRelease;
+var cfgVocalMinFreq, cfgVocalMaxFreq;
 var featOnsetSuite;
 var onsetKick, onsetSnare, onsetHihat, onsetPerc;
 var onsetBass, onsetMelody, onsetBright;
@@ -118,11 +119,14 @@ featBeat     = ("SC_FEATURE_BEAT".getenv ? "1") == "1";
 featChroma   = ("SC_FEATURE_CHROMA".getenv ? "1") == "1";
 featScene    = ("SC_FEATURE_SCENE".getenv ? "1") == "1";
 featEnergy   = ("SC_FEATURE_ENERGY".getenv ? "1") == "1";
+featVocal    = ("SC_FEATURE_VOCAL".getenv ? "1") == "1";
 
 // --- Scene / energy config ---
 cfgSceneThresh      = ("SC_SCENE_THRESHOLD".getenv ? "1.0").asFloat;
 cfgEnergyFastRelease = ("SC_ENERGY_FAST_RELEASE".getenv ? "0.5").asFloat;
 cfgEnergySlowRelease = ("SC_ENERGY_SLOW_RELEASE".getenv ? "8.0").asFloat;
+cfgVocalMinFreq = ("SC_VOCAL_MIN_FREQ".getenv ? "300").asFloat;
+cfgVocalMaxFreq = ("SC_VOCAL_MAX_FREQ".getenv ? "4000").asFloat;
 
 // --- Onset suite channel toggles and thresholds ---
 // Each onset channel can be enabled/disabled independently.
@@ -300,6 +304,22 @@ if(cfgTestMode, {
 		}).play;
 	});
 
+	// --- Vocal likelihood (simulated: peaks periodically like vocal phrases) ---
+	if(featVocal, {
+		Routine({
+			var dt = 1.0 / cfgTrigMedium;
+			loop {
+				var t = Main.elapsedTime;
+				// Simulate vocal phrases: periodic peaks with silence between
+				var phrase = (sin(t * 1.5) * 0.5 + 0.5).clip(0, 1);
+				var inPhrase = (sin(t * 0.2) > 0).asInteger;
+				var vocal = phrase * inPhrase;
+				dests.do({ |d| d.sendMsg('/audio/vocal', vocal) });
+				dt.wait;
+			};
+		}).play;
+	});
+
 	// --- Heartbeat (always active) ---
 	Routine({
 		loop {
@@ -341,6 +361,7 @@ s.waitForBoot({
 		var mfcc, keyRaw, bt2, beatTrig, bpm;
 		var chroma;
 		var sceneChange, energyFast, energySlow, energyDir;
+		var vocalLikelihood;
 
 		// --- Trigger clocks (rates from config) ---
 		// Impulse.kr(N) produces a trigger N times per second.
@@ -573,6 +594,28 @@ s.waitForBoot({
 		});
 
 		// ====================================================================
+		// FEATURE: Vocal likelihood (heuristic)
+		// ====================================================================
+		// Band-pass to the vocal range, then combine pitch confidence
+		// (tonal content) with inverse spectral flatness (not noise).
+		// Produces a 0–1 "vocal likelihood" score. Also triggers on
+		// tonal synth leads — acceptable for EDM lighting use.
+		if(featVocal, {
+			var sigVocal = BPF.ar(sig,
+				(cfgVocalMinFreq * cfgVocalMaxFreq).sqrt,  // geometric center
+				cfgVocalMaxFreq / cfgVocalMinFreq           // bandwidth ratio
+			);
+			var fftVocal = FFT(LocalBuf(cfgFFTSize), sigVocal);
+			var vocalFreq, vocalHasFreq, vocalFlatness, vocalAmp;
+			# vocalFreq, vocalHasFreq = Pitch.kr(sigVocal, 440, cfgVocalMinFreq, cfgVocalMaxFreq);
+			vocalFlatness = SpecFlatness.kr(fftVocal);
+			vocalAmp = Amplitude.kr(sigVocal, 0.01, 0.1);
+			// Combine: high pitch confidence + low flatness + audible level
+			vocalLikelihood = (vocalHasFreq * (1 - vocalFlatness) * (vocalAmp > 0.01).lag(0.1)).clip(0, 1);
+			SendReply.kr(trigMedium, '/tr_vocal', [vocalLikelihood]);
+		});
+
+		// ====================================================================
 		// OUTPUT: silence (analysis only, no sound output)
 		// ====================================================================
 		// We must write something to the output bus or SC may optimize away
@@ -737,6 +780,11 @@ s.waitForBoot({
 		OSCdef(\fwdEnergyDir, { |msg|
 			dests.do({ |d| d.sendMsg('/audio/energy_direction', msg[3].asFloat) });
 		}, '/tr_energy_direction');
+	});
+	if(featVocal, {
+		OSCdef(\fwdVocal, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/vocal', msg[3].asFloat) });
+		}, '/tr_vocal');
 	});
 
 	// --- Heartbeat (always active) ---

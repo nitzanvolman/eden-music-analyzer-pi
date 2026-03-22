@@ -136,7 +136,6 @@ header h1 {
 
 /* === BEAT CARD === */
 .card.beat-card {
-  grid-column: 1 / -1;
   transition: background 0.08s, border-color 0.08s, box-shadow 0.08s;
 }
 .card.beat-card.flash {
@@ -377,8 +376,16 @@ canvas {
   box-shadow: 0 0 8px rgba(0,229,255,0.4);
 }
 /* === SCENE / MOOD CARD === */
-.scene-card {
+.rhythm-scene-row {
   grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+.rhythm-scene-row > .card {
+  min-height: 0;
+}
+.scene-card {
 }
 .scene-body {
   display: flex;

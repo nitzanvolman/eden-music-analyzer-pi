@@ -210,11 +210,12 @@ SynthDef(\audioAnalyzer, {
 	// FEATURE: Beat tracking (tempo and beat positions)
 	// ====================================================================
 	if(~feat[\beat], {
-		// BeatTrack.kr(chain, lock) works directly with an FFT chain.
+		// BeatTrack requires FFT size 1024 — use a dedicated FFT chain.
 		// Returns [beatTrig, phase, tempo, clock].
 		// tempo is in beats per second — multiply by 60 for BPM.
 		// lock: 0 = free (adapts quickly), 1 = locked (steady tempo)
-		var bt = BeatTrack.kr(chain, ~cfg[\beatLock]);
+		var beatChain = FFT(LocalBuf(1024), sig);
+		var bt = BeatTrack.kr(beatChain, ~cfg[\beatLock]);
 		beatTrig = bt[0];
 		bpm = bt[2] * 60;  // beats/sec -> BPM
 		SendReply.kr(beatTrig, '/tr_beat', [1]);

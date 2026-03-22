@@ -32,8 +32,13 @@ var cfgPitchMinFreq, cfgPitchMaxFreq;
 var cfgMFCCCount, cfgKeyDecay, cfgBeatLock;
 var cfgTrigFast, cfgTrigMedium, cfgTrigSlow;
 var cfgTestMode;
+var cfgInputGain, cfgHPFFreq;
+var cfgGateThresh, cfgGateAttack, cfgGateRelease;
+var cfgCompEnabled, cfgCompThresh, cfgCompRatio, cfgCompAttack, cfgCompRelease;
 var featAmp, featPitch, featLoud, featCentroid, featFlatness;
 var featMFCC, featKey, featBeat, featChroma;
+var featScene, featEnergy;
+var cfgSceneThresh, cfgEnergyFastRelease, cfgEnergySlowRelease;
 var featOnsetSuite;
 var onsetKick, onsetSnare, onsetHihat, onsetPerc;
 var onsetBass, onsetMelody, onsetBright;
@@ -87,6 +92,18 @@ cfgTrigMedium  = ("SC_TRIG_RATE_MEDIUM".getenv ? "10").asFloat;
 cfgTrigSlow    = ("SC_TRIG_RATE_SLOW".getenv ? "2").asFloat;
 cfgTestMode    = ("SC_TEST_MODE".getenv ? "0") == "1";
 
+// --- Input conditioning (applied before analysis) ---
+cfgInputGain   = ("SC_INPUT_GAIN".getenv ? "1.0").asFloat;
+cfgHPFFreq     = ("SC_HPF_FREQ".getenv ? "20").asFloat;
+cfgGateThresh  = ("SC_NOISE_GATE_THRESHOLD".getenv ? "-96").asFloat;
+cfgGateAttack  = ("SC_NOISE_GATE_ATTACK".getenv ? "0.01").asFloat;
+cfgGateRelease = ("SC_NOISE_GATE_RELEASE".getenv ? "0.1").asFloat;
+cfgCompEnabled = ("SC_COMPRESSOR_ENABLED".getenv ? "0") == "1";
+cfgCompThresh  = ("SC_COMPRESSOR_THRESHOLD".getenv ? "-12").asFloat;
+cfgCompRatio   = ("SC_COMPRESSOR_RATIO".getenv ? "3").asFloat;
+cfgCompAttack  = ("SC_COMPRESSOR_ATTACK".getenv ? "0.01").asFloat;
+cfgCompRelease = ("SC_COMPRESSOR_RELEASE".getenv ? "0.1").asFloat;
+
 // --- Feature toggles (1 = enabled, 0 = disabled) ---
 // Disabled features are excluded from the SynthDef graph entirely, saving CPU.
 featAmp      = ("SC_FEATURE_AMPLITUDE".getenv ? "1") == "1";
@@ -99,6 +116,13 @@ featMFCC     = ("SC_FEATURE_MFCC".getenv ? "1") == "1";
 featKey      = ("SC_FEATURE_KEY".getenv ? "1") == "1";
 featBeat     = ("SC_FEATURE_BEAT".getenv ? "1") == "1";
 featChroma   = ("SC_FEATURE_CHROMA".getenv ? "1") == "1";
+featScene    = ("SC_FEATURE_SCENE".getenv ? "1") == "1";
+featEnergy   = ("SC_FEATURE_ENERGY".getenv ? "1") == "1";
+
+// --- Scene / energy config ---
+cfgSceneThresh      = ("SC_SCENE_THRESHOLD".getenv ? "1.0").asFloat;
+cfgEnergyFastRelease = ("SC_ENERGY_FAST_RELEASE".getenv ? "0.5").asFloat;
+cfgEnergySlowRelease = ("SC_ENERGY_SLOW_RELEASE".getenv ? "8.0").asFloat;
 
 // --- Onset suite channel toggles and thresholds ---
 // Each onset channel can be enabled/disabled independently.
@@ -252,6 +276,30 @@ if(cfgTestMode, {
 		});
 	});
 
+	// --- Scene change (simulated every 8–20 seconds) ---
+	if(featScene, {
+		Routine({
+			loop {
+				dests.do({ |d| d.sendMsg('/audio/scene_change', 1) });
+				(8.0 + 12.0.rand).wait;
+			};
+		}).play;
+	});
+
+	// --- Energy direction (simulated slow sine wave: building/breaking) ---
+	if(featEnergy, {
+		Routine({
+			var dt = 1.0 / cfgTrigMedium;
+			loop {
+				var t = Main.elapsedTime;
+				// Slow sine cycles through building (+1) and breaking (-1)
+				var dir = sin(t * 0.15).clip(-1, 1);
+				dests.do({ |d| d.sendMsg('/audio/energy_direction', dir) });
+				dt.wait;
+			};
+		}).play;
+	});
+
 	// --- Heartbeat (always active) ---
 	Routine({
 		loop {
@@ -292,6 +340,7 @@ s.waitForBoot({
 		var amp, freq, hasFreq, loud, centroid, flatness;
 		var mfcc, keyRaw, bt2, beatTrig, bpm;
 		var chroma;
+		var sceneChange, energyFast, energySlow, energyDir;
 
 		// --- Trigger clocks (rates from config) ---
 		// Impulse.kr(N) produces a trigger N times per second.
@@ -308,6 +357,42 @@ s.waitForBoot({
 		// Change 0 to 1 for the second channel, etc.
 		// The audio device is configured via JACK (~/.jackdrc).
 		sig = SoundIn.ar(cfgInputChan);
+
+		// ====================================================================
+		// INPUT CONDITIONING
+		// ====================================================================
+		// Signal chain: Gain → HPF (rumble removal) → Noise Gate → Compressor
+		// All stages are transparent at default values. Tune in config.env
+		// for live recordings with noise (wind, crowd, generators).
+
+		// --- Gain: normalize input level ---
+		sig = sig * cfgInputGain;
+
+		// --- High-pass filter: remove sub-bass rumble ---
+		// 20 Hz default is inaudible; set to 30–40 Hz for playa recordings
+		if(cfgHPFFreq > 20, {
+			sig = HPF.ar(sig, cfgHPFFreq);
+		});
+
+		// --- Noise gate: silence signal below threshold ---
+		// -96 dB default is effectively off; set to -40 to -30 for noisy environments
+		if(cfgGateThresh > -90, {
+			var gateEnv = Amplitude.kr(sig, cfgGateAttack, cfgGateRelease);
+			var gateOpen = (gateEnv.ampdb > cfgGateThresh).lag(cfgGateRelease);
+			sig = sig * gateOpen;
+		});
+
+		// --- Compressor: tame dynamic range ---
+		// Off by default; enable for DJ sets with huge dynamic swings
+		if(cfgCompEnabled, {
+			sig = Compander.ar(sig, sig,
+				thresh: cfgCompThresh.dbamp,
+				slopeBelow: 1,
+				slopeAbove: cfgCompRatio.reciprocal,
+				clampTime: cfgCompAttack,
+				relaxTime: cfgCompRelease
+			);
+		});
 
 		// ====================================================================
 		// FFT (Fast Fourier Transform)
@@ -460,6 +545,31 @@ s.waitForBoot({
 		if(featChroma and: { 'Chromagram'.asClass.notNil }, {
 			chroma = 'Chromagram'.asClass.kr(chain, cfgFFTSize);
 			SendReply.kr(trigMedium, '/tr_chroma', chroma);
+		});
+
+		// ====================================================================
+		// FEATURE: Scene change detection (spectral novelty)
+		// ====================================================================
+		// PV_HainsworthFoote measures spectral change between consecutive
+		// FFT frames. With foot=1, hains=0 it's purely spectral novelty —
+		// fires on breakdowns, drops, track transitions, filter sweeps.
+		if(featScene, {
+			var chainCopy = PV_Copy(chain, LocalBuf(cfgFFTSize));
+			sceneChange = PV_HainsworthFoote.ar(chainCopy, 0.0, 1.0, cfgSceneThresh, 0.04);
+			SendReply.kr(sceneChange, '/tr_scene_change', [1]);
+		});
+
+		// ====================================================================
+		// FEATURE: Energy direction (building up / breaking down)
+		// ====================================================================
+		// Compares short-term energy (fast envelope) to long-term energy
+		// (slow envelope). Positive = building up, negative = breaking down.
+		// Sent at medium rate as a continuous -1 to +1 value.
+		if(featEnergy, {
+			energyFast = Amplitude.kr(sig, 0.01, cfgEnergyFastRelease);
+			energySlow = Amplitude.kr(sig, 0.01, cfgEnergySlowRelease);
+			energyDir = ((energyFast - energySlow) / energySlow.max(0.001)).clip(-1, 1);
+			SendReply.kr(trigMedium, '/tr_energy_direction', [energyDir]);
 		});
 
 		// ====================================================================
@@ -617,6 +727,16 @@ s.waitForBoot({
 				msg[11].asFloat, msg[12].asFloat, msg[13].asFloat, msg[14].asFloat
 			) });
 		}, '/tr_chroma');
+	});
+	if(featScene, {
+		OSCdef(\fwdSceneChange, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/scene_change', 1) });
+		}, '/tr_scene_change');
+	});
+	if(featEnergy, {
+		OSCdef(\fwdEnergyDir, { |msg|
+			dests.do({ |d| d.sendMsg('/audio/energy_direction', msg[3].asFloat) });
+		}, '/tr_energy_direction');
 	});
 
 	// --- Heartbeat (always active) ---

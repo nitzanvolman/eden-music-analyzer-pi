@@ -126,6 +126,7 @@ echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governo
 ```bash
 mkdir -p ~/sc-osc
 cp analyzer.scd autostart.sh test_receiver.py config_template.env ~/sc-osc/
+cp -r sc ~/sc-osc/sc
 cp config_template.env ~/sc-osc/config.env  # create config from template
 chmod +x ~/sc-osc/autostart.sh ~/sc-osc/test_receiver.py
 ```

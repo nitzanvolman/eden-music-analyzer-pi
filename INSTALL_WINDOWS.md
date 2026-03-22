@@ -48,6 +48,7 @@ cd sc-osc
 # Create config from template
 mkdir -Force "$env:USERPROFILE\sc-osc"
 Copy-Item analyzer.scd, hello.scd, test_receiver.py, config_template.env "$env:USERPROFILE\sc-osc\"
+Copy-Item -Recurse sc "$env:USERPROFILE\sc-osc\sc"
 Copy-Item config_template.env "$env:USERPROFILE\sc-osc\config.env"
 
 # Create Python virtual environment

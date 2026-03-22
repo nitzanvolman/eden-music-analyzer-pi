@@ -83,6 +83,9 @@ All messages are sent to the configured destinations (default `127.0.0.1:9000`).
 | `/audio/beat`              | `i`           | trigger | 1 on each detected beat              |
 | `/audio/bpm`               | `f`           | trigger | Estimated tempo (BPM)                |
 | `/audio/chroma`            | 12x `f`       | 10 Hz   | Chromagram, 12 pitch classes (C--B)  |
+| `/audio/scene_change`      | `i`           | trigger | Spectral novelty event (drops, transitions)|
+| `/audio/energy_direction`  | `f`           | 10 Hz   | Building (+1) to breaking (-1)       |
+| `/audio/vocal`             | `f`           | 10 Hz   | Vocal/tonal likelihood, 0.0 -- 1.0   |
 
 ### Analysis Details
 
@@ -105,6 +108,14 @@ All messages are sent to the configured destinations (default `127.0.0.1:9000`).
 **Chromagram** — Energy of each of the 12 pitch classes (C through B) regardless of octave. Shows which notes are playing. Requires Chromagram UGen (included in redFrik standalone, build SCMIRUGens for from-source).
 
 **Beat Tracking** — Detects beats and estimates BPM using template matching. `SC_BEAT_LOCK=0` adapts quickly (live DJs), `SC_BEAT_LOCK=1` holds steady tempo (produced tracks).
+
+**Scene Change Detection** — Fires a trigger when the spectral content changes significantly (breakdowns, drops, track transitions, filter sweeps). Uses `PV_HainsworthFoote` spectral novelty detector. Sensitivity via `SC_SCENE_THRESHOLD` (higher = fewer triggers). Toggle: `SC_FEATURE_SCENE`.
+
+**Energy Direction** — Compares short-term energy envelope to long-term energy envelope. Returns a continuous -1 to +1 value: positive = energy is building up, negative = energy is breaking down, near zero = steady. Tune the envelope times with `SC_ENERGY_FAST_RELEASE` (default 0.5s) and `SC_ENERGY_SLOW_RELEASE` (default 8.0s). Toggle: `SC_FEATURE_ENERGY`.
+
+**Vocal Likelihood** — Heuristic vocal detector. Band-passes to the vocal range (300–4000 Hz), then combines pitch confidence, inverse spectral flatness, and amplitude gating into a 0–1 score. Also triggers on tonal synth leads — acceptable for EDM lighting use. Configure range with `SC_VOCAL_MIN_FREQ` / `SC_VOCAL_MAX_FREQ`. Toggle: `SC_FEATURE_VOCAL`.
+
+**Input Conditioning** — Optional signal processing chain applied before all analysis: Gain → High-Pass Filter → Noise Gate → Compressor. All stages are transparent at default values. Tune for live recordings with ambient noise (wind, crowd, generators). Key config: `SC_INPUT_GAIN` (level), `SC_HPF_FREQ` (rumble cutoff), `SC_NOISE_GATE_THRESHOLD` (gate dB), `SC_COMPRESSOR_ENABLED` (dynamics).
 
 ## Testing
 

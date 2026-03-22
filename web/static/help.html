@@ -141,6 +141,43 @@ h1 + p { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 2rem; }
   <p class="detail"><strong>Config:</strong> SC_BEAT_LOCK — 0 = free (adapts quickly to tempo changes, good for live DJs), 1 = locked (holds steady tempo, good for produced tracks).</p>
 </div>
 
+<div class="section-label">Scene & Energy Features</div>
+
+<div class="feature">
+  <h2>Scene Change Detection <span class="osc">/audio/scene_change</span> <span class="rate">event</span></h2>
+  <p>Fires a trigger when the spectral content changes significantly — breakdowns, drops, track transitions, filter sweeps. Uses PV_HainsworthFoote spectral novelty detector.</p>
+  <p class="detail"><strong>Output:</strong> Sends 1 on each detected scene change (event-driven).</p>
+  <p class="detail"><strong>Use case:</strong> Trigger dramatic lighting changes on drops and transitions. Flash entire rig on major spectral shifts.</p>
+  <p class="detail"><strong>Config:</strong> SC_SCENE_THRESHOLD (default 1.0, higher = fewer, more dramatic triggers). Toggle: SC_FEATURE_SCENE.</p>
+</div>
+
+<div class="feature">
+  <h2>Energy Direction <span class="osc">/audio/energy_direction</span> <span class="rate">10 Hz</span></h2>
+  <p>Compares short-term energy to long-term energy. Detects whether the music is building up (approaching a drop) or breaking down (entering a breakdown). Near zero means steady energy.</p>
+  <p class="detail"><strong>Output:</strong> Single float, -1.0 (breaking down) through 0.0 (steady) to +1.0 (building up).</p>
+  <p class="detail"><strong>Use case:</strong> Gradually intensify lighting as energy builds, dim or cool down during breakdowns. Drive anticipation effects before drops.</p>
+  <p class="detail"><strong>Config:</strong> SC_ENERGY_FAST_RELEASE (default 0.5s, short-term envelope), SC_ENERGY_SLOW_RELEASE (default 8.0s, long-term envelope). Toggle: SC_FEATURE_ENERGY.</p>
+</div>
+
+<div class="feature">
+  <h2>Vocal Likelihood <span class="osc">/audio/vocal</span> <span class="rate">10 Hz</span></h2>
+  <p>Heuristic vocal detector. Band-passes to the vocal range, then combines pitch confidence (tonal content), inverse spectral flatness (not noise), and amplitude gating into a likelihood score. Also triggers on tonal synth leads — acceptable for EDM lighting use.</p>
+  <p class="detail"><strong>Output:</strong> Single float, 0.0 (no vocal/tonal content) to 1.0 (strong vocal/tonal presence).</p>
+  <p class="detail"><strong>Use case:</strong> Highlight vocals with spotlight effects. Distinguish vocal sections from instrumental drops for different lighting moods.</p>
+  <p class="detail"><strong>Config:</strong> SC_VOCAL_MIN_FREQ (default 300 Hz), SC_VOCAL_MAX_FREQ (default 4000 Hz). Toggle: SC_FEATURE_VOCAL.</p>
+</div>
+
+<div class="section-label">Input Conditioning</div>
+
+<div class="feature">
+  <h2>Signal Chain</h2>
+  <p>Optional signal processing applied before all analysis: Gain → High-Pass Filter → Noise Gate → Compressor. All stages are transparent at default values — existing behavior is unchanged unless you set them. Tune for live recordings with ambient noise (wind, crowd, generators).</p>
+  <p class="detail"><strong>Gain:</strong> SC_INPUT_GAIN (default 1.0). Normalize quiet or hot recordings so thresholds work consistently.</p>
+  <p class="detail"><strong>High-Pass Filter:</strong> SC_HPF_FREQ (default 20 Hz). Set to 30–40 Hz for wind/generator rumble on playa.</p>
+  <p class="detail"><strong>Noise Gate:</strong> SC_NOISE_GATE_THRESHOLD (default -96 dB, effectively off). Set to -40 to -30 for noisy environments. Prevents false triggers during breakdowns.</p>
+  <p class="detail"><strong>Compressor:</strong> SC_COMPRESSOR_ENABLED (default 0). Tames dynamic range so quiet and loud sections analyze consistently. SC_COMPRESSOR_THRESHOLD, SC_COMPRESSOR_RATIO, SC_COMPRESSOR_ATTACK, SC_COMPRESSOR_RELEASE.</p>
+</div>
+
 <div class="section-label">Configuration</div>
 
 <div class="feature">
@@ -156,7 +193,7 @@ h1 + p { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 2rem; }
 <div class="feature">
   <h2>Feature Toggles</h2>
   <p>Each feature can be individually disabled to save CPU on the Raspberry Pi. Disabled features are completely excluded from the analysis — no UGen computation, no OSC messages sent.</p>
-  <p class="detail"><strong>Config:</strong> SC_FEATURE_AMPLITUDE, SC_FEATURE_PITCH, SC_FEATURE_LOUDNESS, SC_FEATURE_CENTROID, SC_FEATURE_FLATNESS, SC_FEATURE_ONSET_SUITE, SC_FEATURE_MFCC, SC_FEATURE_KEY, SC_FEATURE_BEAT, SC_FEATURE_CHROMA (all default 1 = enabled, set to 0 to disable). Individual onset channels have their own toggles (SC_ONSET_{NAME}).</p>
+  <p class="detail"><strong>Config:</strong> SC_FEATURE_AMPLITUDE, SC_FEATURE_PITCH, SC_FEATURE_LOUDNESS, SC_FEATURE_CENTROID, SC_FEATURE_FLATNESS, SC_FEATURE_ONSET_SUITE, SC_FEATURE_MFCC, SC_FEATURE_KEY, SC_FEATURE_BEAT, SC_FEATURE_CHROMA, SC_FEATURE_SCENE, SC_FEATURE_ENERGY, SC_FEATURE_VOCAL (all default 1 = enabled, set to 0 to disable). Individual onset channels have their own toggles (SC_ONSET_{NAME}).</p>
 </div>
 
 </div>

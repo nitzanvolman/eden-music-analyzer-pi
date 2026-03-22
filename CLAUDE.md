@@ -31,13 +31,13 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 ### Data flow
 ```
-Mic → scsynth (SynthDef) → SendReply → sclang OSCdefs → UDP OSC → osc_bridge.py → WebSocket → browser
+Mic → scsynth (SynthDef) → [Input Conditioning] → SendReply → sclang OSCdefs → UDP OSC → osc_bridge.py → WebSocket → browser
 ```
 
 ### Configuration
 All runtime config is in `config.env` (env vars prefixed `SC_`). `config_template.env` documents all options with defaults. Config is read once at startup — changes require restart.
 
-Key config areas: OSC destinations, feature toggles (`SC_FEATURE_*=0/1`), trigger rates, detection thresholds, FFT size, onset suite per-channel toggles and thresholds (`SC_ONSET_*`).
+Key config areas: OSC destinations, feature toggles (`SC_FEATURE_*=0/1`), trigger rates, detection thresholds, FFT size, onset suite per-channel toggles and thresholds (`SC_ONSET_*`), input conditioning (gain, HPF, noise gate, compressor), scene/energy/vocal detection parameters.
 
 ### Onset detection suite
 The analyzer runs 10 parallel onset detectors, each with its own algorithm, frequency band filter, and threshold. Frequency-filtered channels (kick, snare, hihat, bass, melody, bright) have their own FFT chain. Full-spectrum channels (perc, any, drop, soft) share the main FFT via PV_Copy. OSC paths: `/audio/onset/{channel}`. Config: `SC_FEATURE_ONSET_SUITE` master toggle, `SC_ONSET_{NAME}` per-channel toggle, `SC_ONSET_{NAME}_THRESHOLD` per-channel threshold.

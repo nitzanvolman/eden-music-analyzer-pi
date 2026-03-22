@@ -232,6 +232,13 @@ SynthDef(\audioAnalyzer, {
 			chromaCenter,
 			(~cfg[\chromaMaxFreq] - ~cfg[\chromaMinFreq]) / chromaCenter
 		);
+		// Gate by spectral flatness: attenuate percussive/noisy content.
+		// Low flatness = tonal (pass through), high flatness = percussion (suppress).
+		var chromaFlatChain = FFT(LocalBuf(~cfg[\fftSize]), sigChroma);
+		var chromaFlat = SpecFlatness.kr(chromaFlatChain);
+		var tonalGate = (1 - chromaFlat).clip(0, 1).lag(0.05);
+		sigChroma = sigChroma * tonalGate;
+		// Dedicated larger FFT for chromagram analysis
 		var chromaChain = FFT(LocalBuf(~cfg[\chromaFFTSize]), sigChroma);
 		chroma = 'Chromagram'.asClass.kr(chromaChain, ~cfg[\chromaFFTSize]);
 		SendReply.kr(trigMedium, '/tr_chroma', chroma);

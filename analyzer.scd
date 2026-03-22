@@ -556,7 +556,7 @@ s.waitForBoot({
 		if(featScene, {
 			var chainCopy = PV_Copy(chain, LocalBuf(cfgFFTSize));
 			sceneChange = PV_HainsworthFoote.ar(chainCopy, 0.0, 1.0, cfgSceneThresh, 0.04);
-			SendReply.kr(sceneChange, '/tr_scene_change', [1]);
+			SendReply.kr(A2K.kr(sceneChange), '/tr_scene_change', [1]);
 		});
 
 		// ====================================================================

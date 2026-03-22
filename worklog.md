@@ -101,3 +101,4 @@
 - [Task #34] ✅
 - [Task #35] ❌ - Review found BPF rq parameter was inverted: used maxFreq/minFreq (13.33) instead of (maxFreq-minFreq)/center (3.38), making the filter far too wide. Fixed to match existing BPF patterns (snare, melody onsets).
 - [Task #35] Added vocal likelihood detection: BPF to vocal range (300–4000Hz), combines Pitch.kr confidence + inverse SpecFlatness + amplitude gate into a 0–1 score on /audio/vocal. Feature toggle SC_FEATURE_VOCAL, configurable freq range. Test mode, OSC forwarding, config templates all updated.
+- [Task #35] ✅

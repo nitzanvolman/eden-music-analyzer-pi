@@ -15,7 +15,7 @@ SynthDef(\audioAnalyzer, {
 	// --- Variable declarations (SC requires these at top of function) ---
 	var sig, chain;
 	var amp, freq, hasFreq, loud, centroid, flatness;
-	var mfcc, keyRaw, bt2, beatTrig, bpm;
+	var mfcc, keyRaw, beatTrig, bpm;
 	var chroma;
 	var sceneChange, energyFast, energySlow, energyDir;
 	var vocalLikelihood;
@@ -210,12 +210,13 @@ SynthDef(\audioAnalyzer, {
 	// FEATURE: Beat tracking (tempo and beat positions)
 	// ====================================================================
 	if(~feat[\beat], {
-		// BeatTrack2.kr(busindex, numfeatures, windowsize, phaseaccuracy, lock)
-		// busindex = FFT buffer, numfeatures = spectral features (default 4),
+		// BeatTrack.kr(chain, lock) works directly with an FFT chain.
+		// Returns [beatTrig, phase, tempo, clock].
+		// tempo is in beats per second — multiply by 60 for BPM.
 		// lock: 0 = free (adapts quickly), 1 = locked (steady tempo)
-		bt2 = BeatTrack2.kr(chain, 4, 2.0, 0.02, ~cfg[\beatLock]);
-		beatTrig = bt2[0];
-		bpm = bt2[3];
+		var bt = BeatTrack.kr(chain, ~cfg[\beatLock]);
+		beatTrig = bt[0];
+		bpm = bt[2] * 60;  // beats/sec -> BPM
 		SendReply.kr(beatTrig, '/tr_beat', [1]);
 		SendReply.kr(beatTrig, '/tr_bpm', [bpm]);
 	});

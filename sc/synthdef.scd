@@ -252,13 +252,18 @@ SynthDef(\audioAnalyzer, {
 	// ====================================================================
 	// FEATURE: Scene change detection (spectral novelty)
 	// ====================================================================
-	// PV_HainsworthFoote measures spectral change between consecutive
-	// FFT frames. With foot=1, hains=0 it's purely spectral novelty —
-	// fires on breakdowns, drops, track transitions, filter sweeps.
+	// Sends a continuous spectral novelty score based on how fast the
+	// spectral centroid is changing. The OSC forwarding layer applies
+	// adaptive thresholding (running average + multiplier) and cooldown
+	// to generate discrete scene change triggers.
 	if(~feat[\scene], {
-		var chainCopy = PV_Copy(chain, LocalBuf(~cfg[\fftSize]));
-		sceneChange = PV_HainsworthFoote.ar(chainCopy, 0.0, 1.0, ~cfg[\sceneThresh], 0.04);
-		SendReply.kr(A2K.kr(sceneChange), '/tr_scene_change', [1]);
+		var sceneCentroid, sceneSlope, sceneNovelty;
+		sceneCentroid = SpecCentroid.kr(chain);
+		// Slope.kr gives the rate of change per control period
+		sceneSlope = Slope.kr(sceneCentroid).abs;
+		// Smooth to avoid single-frame spikes
+		sceneNovelty = sceneSlope.lag(0.2);
+		SendReply.kr(trigMedium, '/tr_scene_novelty', [sceneNovelty]);
 	});
 
 	// ====================================================================

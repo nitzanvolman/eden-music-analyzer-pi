@@ -135,9 +135,38 @@ if(~feat[\chroma], {
 	}, '/tr_chroma');
 });
 if(~feat[\scene], {
-	OSCdef(\fwdSceneChange, { |msg|
-		~dests.do({ |d| d.sendMsg('/audio/scene_change', 1) });
-	}, '/tr_scene_change');
+	// Adaptive scene change detection:
+	// - Maintain a ring buffer of recent novelty scores
+	// - Trigger only when current value exceeds running average * sensitivity
+	// - Enforce a cooldown period between triggers
+	var bufSize = (~cfg[\sceneWindow] * ~cfg[\trigMedium]).asInteger.max(10);
+	var noveltyBuf = Array.fill(bufSize, { 0.0 });
+	var bufIdx = 0;
+	var lastTrigTime = 0;
+
+	OSCdef(\fwdSceneNovelty, { |msg|
+		var novelty = msg[3].asFloat;
+		var now = Main.elapsedTime;
+		var avg, threshold;
+
+		// Update ring buffer
+		noveltyBuf[bufIdx] = novelty;
+		bufIdx = (bufIdx + 1) % bufSize;
+
+		// Compute running average
+		avg = noveltyBuf.mean;
+
+		// Adaptive threshold: trigger when novelty exceeds average * sensitivity
+		threshold = avg * ~cfg[\sceneSensitivity];
+
+		if((novelty > threshold) and: { (now - lastTrigTime) > ~cfg[\sceneCooldown] } and: { avg > 0 }, {
+			lastTrigTime = now;
+			~dests.do({ |d| d.sendMsg('/audio/scene_change', 1) });
+		});
+
+		// Always forward the raw novelty score for visualization
+		~dests.do({ |d| d.sendMsg('/audio/scene_novelty', novelty) });
+	}, '/tr_scene_novelty');
 });
 if(~feat[\energy], {
 	OSCdef(\fwdEnergyDir, { |msg|

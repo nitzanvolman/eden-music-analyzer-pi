@@ -57,7 +57,9 @@ if(destStr.notNil and: { destStr.size > 0 }, {
 	compAttack:  ("SC_COMPRESSOR_ATTACK".getenv ? "0.01").asFloat,
 	compRelease: ("SC_COMPRESSOR_RELEASE".getenv ? "0.1").asFloat,
 	// --- Scene / energy config ---
-	sceneThresh:      ("SC_SCENE_THRESHOLD".getenv ? "0.4").asFloat,
+	sceneSensitivity: ("SC_SCENE_SENSITIVITY".getenv ? "3.0").asFloat,
+	sceneCooldown:    ("SC_SCENE_COOLDOWN".getenv ? "15").asFloat,
+	sceneWindow:      ("SC_SCENE_WINDOW".getenv ? "20").asFloat,
 	energyFastRelease: ("SC_ENERGY_FAST_RELEASE".getenv ? "0.5").asFloat,
 	energySlowRelease: ("SC_ENERGY_SLOW_RELEASE".getenv ? "8.0").asFloat,
 	vocalMinFreq: ("SC_VOCAL_MIN_FREQ".getenv ? "300").asFloat,

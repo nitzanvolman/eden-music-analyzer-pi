@@ -9,7 +9,7 @@ function midiToNote(midi) { return NOTE_NAMES[Math.round(midi) % 12]; }
 function midiToOctave(midi) { return Math.floor(Math.round(midi) / 12) - 1; }
 
 // Pitch history ring buffer (stores MIDI note numbers, null = no pitch)
-const PITCH_HISTORY_LEN = 80;
+const PITCH_HISTORY_LEN = 40;
 const pitchHistory = new Array(PITCH_HISTORY_LEN).fill(null);
 
 // Fixed pitch ribbon range — covers practical detection range (E1 to C7)

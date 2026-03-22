@@ -57,7 +57,7 @@ if(destStr.notNil and: { destStr.size > 0 }, {
 	compAttack:  ("SC_COMPRESSOR_ATTACK".getenv ? "0.01").asFloat,
 	compRelease: ("SC_COMPRESSOR_RELEASE".getenv ? "0.1").asFloat,
 	// --- Scene / energy config ---
-	sceneSensitivity: ("SC_SCENE_SENSITIVITY".getenv ? "3.0").asFloat,
+	sceneSensitivity: ("SC_SCENE_SENSITIVITY".getenv ? "2.0").asFloat,
 	sceneCooldown:    ("SC_SCENE_COOLDOWN".getenv ? "15").asFloat,
 	sceneWindow:      ("SC_SCENE_WINDOW".getenv ? "20").asFloat,
 	energyFastRelease: ("SC_ENERGY_FAST_RELEASE".getenv ? "0.5").asFloat,

@@ -264,8 +264,8 @@ SynthDef(\audioAnalyzer, {
 		sceneCentroid = SpecCentroid.kr(chain);
 		sceneLoud = Loudness.kr(chain);
 		// Short-term: fast enough to catch a drop, slow enough to ignore single hits
-		shortCentroid = Lag.kr(sceneCentroid, 0.3);
-		shortLoud = Lag.kr(sceneLoud, 0.3);
+		shortCentroid = Lag.kr(sceneCentroid, 0.1);
+		shortLoud = Lag.kr(sceneLoud, 0.1);
 		// Long-term: stable baseline of current scene
 		longCentroid = Lag.kr(sceneCentroid, 15.0);
 		longLoud = Lag.kr(sceneLoud, 15.0);

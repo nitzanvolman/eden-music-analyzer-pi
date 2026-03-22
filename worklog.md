@@ -110,6 +110,7 @@
 - [Task #39] ✅ — also added energy direction and vocal to the trigger rate summary in help.html.
 - [Task #39] Documentation review: added scene change, energy direction, vocal likelihood, and input conditioning to README.md (OSC table + analysis details), help.html (new Scene & Energy and Input Conditioning sections, updated feature toggles list), and CLAUDE.md (updated config areas and data flow).
 - [Task #38] Made all .card elements flex-column, added margin-top:auto to .meter and .bright-track so bars align to the bottom of their cards regardless of content height. Verified no regressions on beat-card, scene-card, pitch-card (absolute positioning), or vocal-bar meter (flex-row parent).
+- [Task #41] ✅
 - [Task #41] Wrapped Rhythm and Scene/Mood cards in a rhythm-scene-row (grid 1fr 1fr) so they sit side by side in a single row. Removed grid-column span from individual cards.
 - [Task #40] ✅
 - [Task #40] Improved chromagram: band-pass signal to melodic range (200–4000 Hz, configurable SC_CHROMA_MIN_FREQ/SC_CHROMA_MAX_FREQ) before analysis, and use a dedicated larger FFT buffer (4096, configurable SC_CHROMA_FFT_SIZE) for better pitch class separation. Filters out percussion, sub-bass, and noise.

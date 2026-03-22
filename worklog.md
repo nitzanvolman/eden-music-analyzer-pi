@@ -110,6 +110,7 @@
 - [Task #39] ✅ — also added energy direction and vocal to the trigger rate summary in help.html.
 - [Task #39] Documentation review: added scene change, energy direction, vocal likelihood, and input conditioning to README.md (OSC table + analysis details), help.html (new Scene & Energy and Input Conditioning sections, updated feature toggles list), and CLAUDE.md (updated config areas and data flow).
 - [Task #38] Made all .card elements flex-column, added margin-top:auto to .meter and .bright-track so bars align to the bottom of their cards regardless of content height. Verified no regressions on beat-card, scene-card, pitch-card (absolute positioning), or vocal-bar meter (flex-row parent).
+- [Task #43] ✅ — trivial label change, no review needed.
 - [Task #42] ✅
 - [Task #42] Fixed BPM bug: BeatTrack2.kr was called with cfgBeatLock as second arg (numfeatures), meaning it used 0 or 1 spectral features instead of the default 4. This caused garbage tempo output. Fixed by passing all args explicitly: numfeatures=4, windowsize=2.0, phaseaccuracy=0.02, lock=cfgBeatLock.
 - [Task #41] ✅

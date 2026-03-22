@@ -138,10 +138,7 @@ function handleOSC(addr, args) {
 // ============================================================
 let beatTimeout = null;
 function flashBeat() {
-  const el = document.getElementById('beatCard');
-  el.classList.add('flash');
-  clearTimeout(beatTimeout);
-  beatTimeout = setTimeout(() => el.classList.remove('flash'), 150);
+  flashOnsetPip('beat');
 }
 
 let sceneTimeout = null;
@@ -280,8 +277,15 @@ function updateDOM() {
   // BPM
   document.getElementById('bpmVal').textContent = state.bpm > 0 ? Math.round(state.bpm) : '---';
 
-  // Vocal likelihood
-  document.getElementById('vocalBar').style.width = (smooth.vocal * 100) + '%';
+  // Vocal likelihood — light the vocal pip when score is high
+  const vocalEl = document.getElementById('onset-vocal');
+  if (vocalEl) {
+    if (smooth.vocal > 0.3) {
+      vocalEl.classList.add('lit');
+    } else {
+      vocalEl.classList.remove('lit');
+    }
+  }
 
   // Energy direction marker: -1 (left/breaking) to +1 (right/building), center = 50%
   const energyPct = (smooth.energyDir * 0.5 + 0.5) * 100;

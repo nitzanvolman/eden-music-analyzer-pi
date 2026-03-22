@@ -147,7 +147,7 @@ header h1 {
 /* === ONSET SUITE === */
 .onset-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 0.5rem;
   margin-top: 0.5rem;
 }

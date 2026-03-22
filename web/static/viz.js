@@ -26,10 +26,11 @@ const state = {
   key: 0, mode: 1,
   chroma: new Float32Array(12),
   vocal: 0,
+  energyDir: 0,
 };
 
 // Smoothed values for display
-const smooth = { amp: 0, loud: 0, centroid: 0, flatness: 0, vocal: 0 };
+const smooth = { amp: 0, loud: 0, centroid: 0, flatness: 0, vocal: 0, energyDir: 0 };
 const SMOOTH = 0.3; // lower = smoother
 
 // ============================================================
@@ -116,6 +117,12 @@ function handleOSC(addr, args) {
     case '/audio/vocal':
       state.vocal = args[0];
       break;
+    case '/audio/scene_change':
+      flashScene();
+      break;
+    case '/audio/energy_direction':
+      state.energyDir = args[0];
+      break;
     case '/audio/key':
       state.key = args[0];
       state.mode = args[1];
@@ -137,6 +144,14 @@ function flashBeat() {
   beatTimeout = setTimeout(() => el.classList.remove('flash'), 150);
 }
 
+let sceneTimeout = null;
+function flashScene() {
+  const el = document.getElementById('sceneFlash');
+  el.classList.add('lit');
+  clearTimeout(sceneTimeout);
+  sceneTimeout = setTimeout(() => el.classList.remove('lit'), 500);
+}
+
 const onsetTimeouts = {};
 function flashOnsetPip(channel) {
   const el = document.getElementById('onset-' + channel);
@@ -154,9 +169,9 @@ let modalUpdateInterval = null;
 
 // Trigger addresses flash briefly in the modal
 const TRIGGER_ADDRS = new Set([
-  '/audio/beat', '/audio/onset/kick', '/audio/onset/snare', '/audio/onset/hihat',
-  '/audio/onset/perc', '/audio/onset/bass', '/audio/onset/melody', '/audio/onset/bright',
-  '/audio/onset/any', '/audio/onset/drop', '/audio/onset/soft'
+  '/audio/beat', '/audio/scene_change', '/audio/onset/kick', '/audio/onset/snare',
+  '/audio/onset/hihat', '/audio/onset/perc', '/audio/onset/bass', '/audio/onset/melody',
+  '/audio/onset/bright', '/audio/onset/any', '/audio/onset/drop', '/audio/onset/soft'
 ]);
 
 function openOscModal(title, addresses) {
@@ -224,6 +239,7 @@ function updateDOM() {
   smooth.centroid = lerp(smooth.centroid, state.centroid, SMOOTH);
   smooth.flatness = lerp(smooth.flatness, state.flatness, SMOOTH);
   smooth.vocal = lerp(smooth.vocal, state.vocal, SMOOTH);
+  smooth.energyDir = lerp(smooth.energyDir, state.energyDir, SMOOTH);
 
   // Amplitude
   document.getElementById('ampVal').textContent = smooth.amp.toFixed(2);
@@ -266,6 +282,10 @@ function updateDOM() {
 
   // Vocal likelihood
   document.getElementById('vocalBar').style.width = (smooth.vocal * 100) + '%';
+
+  // Energy direction marker: -1 (left/breaking) to +1 (right/building), center = 50%
+  const energyPct = (smooth.energyDir * 0.5 + 0.5) * 100;
+  document.getElementById('energyMarker').style.left = energyPct + '%';
 
   // Key
   document.getElementById('keyNote').textContent = NOTE_NAMES[state.key] || '--';

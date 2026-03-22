@@ -374,6 +374,98 @@ canvas {
   background: linear-gradient(90deg, var(--cyan), #e945a0);
   box-shadow: 0 0 8px rgba(0,229,255,0.4);
 }
+/* === SCENE / MOOD CARD === */
+.scene-card {
+  grid-column: 1 / -1;
+}
+.scene-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.4rem;
+}
+.scene-change-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  background: var(--surface2);
+  border: 1px solid transparent;
+  transition: background 0.4s ease-out, border-color 0.4s ease-out, box-shadow 0.4s ease-out;
+}
+.scene-change-indicator.lit {
+  background: rgba(255,215,0,0.2);
+  border-color: var(--gold);
+  box-shadow: 0 0 20px rgba(255,215,0,0.4);
+  transition: background 0s, border-color 0s, box-shadow 0s;
+}
+.scene-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--dim);
+  transition: background 0.4s ease-out, box-shadow 0.4s ease-out;
+}
+.scene-change-indicator.lit .scene-dot {
+  background: var(--gold);
+  box-shadow: 0 0 10px var(--gold);
+  transition: background 0s, box-shadow 0s;
+}
+.scene-change-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.scene-change-indicator.lit .scene-change-label {
+  color: #fff;
+}
+.energy-direction {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.energy-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.5rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
+  width: 4rem;
+}
+.energy-label-down { text-align: right; }
+.energy-label-up { text-align: left; }
+.energy-track {
+  flex: 1;
+  height: 20px;
+  background: var(--surface2);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+.energy-center {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--dim);
+}
+.energy-marker {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 6px;
+  border-radius: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--cyan);
+  box-shadow: 0 0 6px var(--cyan);
+  transition: left 0.15s ease-out;
+}
 .harmony-row {
   grid-column: 1 / -1;
   display: grid;

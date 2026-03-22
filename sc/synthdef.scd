@@ -257,7 +257,7 @@ SynthDef(\audioAnalyzer, {
 	// Sent at medium rate as a continuous -1 to +1 value.
 	if(~feat[\energy], {
 		energyFast = Amplitude.kr(sig, 0.01, ~cfg[\energyFastRelease]);
-		energySlow = Amplitude.kr(sig, 0.01, ~cfg[\energySlowRelease]);
+		energySlow = Amplitude.kr(sig, 2.0, ~cfg[\energySlowRelease]);
 		energyDir = ((energyFast - energySlow) / energySlow.max(0.001)).clip(-1, 1);
 		SendReply.kr(trigMedium, '/tr_energy_direction', [energyDir]);
 	});

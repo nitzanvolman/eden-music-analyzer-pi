@@ -40,6 +40,7 @@ var featMFCC, featKey, featBeat, featChroma;
 var featScene, featEnergy, featVocal;
 var cfgSceneThresh, cfgEnergyFastRelease, cfgEnergySlowRelease;
 var cfgVocalMinFreq, cfgVocalMaxFreq;
+var cfgChromaMinFreq, cfgChromaMaxFreq, cfgChromaFFTSize;
 var featOnsetSuite;
 var onsetKick, onsetSnare, onsetHihat, onsetPerc;
 var onsetBass, onsetMelody, onsetBright;
@@ -127,6 +128,9 @@ cfgEnergyFastRelease = ("SC_ENERGY_FAST_RELEASE".getenv ? "0.5").asFloat;
 cfgEnergySlowRelease = ("SC_ENERGY_SLOW_RELEASE".getenv ? "8.0").asFloat;
 cfgVocalMinFreq = ("SC_VOCAL_MIN_FREQ".getenv ? "300").asFloat;
 cfgVocalMaxFreq = ("SC_VOCAL_MAX_FREQ".getenv ? "4000").asFloat;
+cfgChromaMinFreq = ("SC_CHROMA_MIN_FREQ".getenv ? "200").asFloat;
+cfgChromaMaxFreq = ("SC_CHROMA_MAX_FREQ".getenv ? "4000").asFloat;
+cfgChromaFFTSize = ("SC_CHROMA_FFT_SIZE".getenv ? "4096").asInteger;
 
 // --- Onset suite channel toggles and thresholds ---
 // Each onset channel can be enabled/disabled independently.
@@ -563,8 +567,17 @@ s.waitForBoot({
 		// ====================================================================
 		// FEATURE: Chromagram (pitch class energy)
 		// ====================================================================
+		// Band-pass to melodic range and use a dedicated larger FFT for
+		// better frequency resolution. Filters out percussion, sub-bass,
+		// and noise that would splash energy across all pitch classes.
 		if(featChroma and: { 'Chromagram'.asClass.notNil }, {
-			chroma = 'Chromagram'.asClass.kr(chain, cfgFFTSize);
+			var chromaCenter = (cfgChromaMinFreq * cfgChromaMaxFreq).sqrt;
+			var sigChroma = BPF.ar(sig,
+				chromaCenter,
+				(cfgChromaMaxFreq - cfgChromaMinFreq) / chromaCenter
+			);
+			var chromaChain = FFT(LocalBuf(cfgChromaFFTSize), sigChroma);
+			chroma = 'Chromagram'.asClass.kr(chromaChain, cfgChromaFFTSize);
 			SendReply.kr(trigMedium, '/tr_chroma', chroma);
 		});
 

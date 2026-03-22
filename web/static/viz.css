@@ -101,6 +101,8 @@ header h1 {
   position: relative;
   overflow: hidden;
   transition: border-color 0.3s;
+  display: flex;
+  flex-direction: column;
 }
 .card:hover { border-color: rgba(233,69,96,0.3); }
 .card::before {
@@ -220,6 +222,7 @@ header h1 {
   border-radius: 4px;
   overflow: hidden;
   position: relative;
+  margin-top: auto;
   margin-top: 0.5rem;
 }
 .meter-fill {
@@ -310,7 +313,7 @@ canvas {
   border-radius: 10px;
   background: linear-gradient(90deg, #1a0a2e, #4a1942, #ff6b35, #ffd700, #fff);
   position: relative;
-  margin-top: 0.25rem;
+  margin-top: auto;
 }
 .bright-marker {
   position: absolute;

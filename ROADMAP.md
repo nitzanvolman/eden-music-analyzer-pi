@@ -137,5 +137,5 @@ installed), how to tune, and Output Reference (what the reciever of the OSC mess
 41. [🟢] - Viz UI: make the Rhythm card 2 columns wide and the Scene/Mood card 2 columns wide, so both fit in a single row.
 42. [🟢] - Analyzer: fix BPM bug — BPM is constantly showing 1 or 2 instead of actual tempo. Investigate and fix the BeatTrack2 output or OSC forwarding in analyzer.scd.
 43. [🟢] - Viz UI: in the Scene/Mood card, change "Breaking" / "Building" labels to "DOWN" / "UP".
-44. [🔵] - Viz UI: in the Rhythm card, add Beat and Vocal as onset-style pip boxes in the grid (12 total pips instead of 10 + separate BPM/vocal displays). Beat pip flashes on each beat, Vocal pip lights up when vocal likelihood is high. Remove the separate vocal meter bar.
+44. [🟢] - Viz UI: in the Rhythm card, add Beat and Vocal as onset-style pip boxes in the grid (12 total pips instead of 10 + separate BPM/vocal displays). Beat pip flashes on each beat, Vocal pip lights up when vocal likelihood is high. Remove the separate vocal meter bar.
 45. [⚪] - Modularize analyzer.scd — split the monolithic file into several files (e.g., config, SynthDef, OSC forwarding, test mode) for easier maintenance. Use sclang's file loading mechanisms to compose them.

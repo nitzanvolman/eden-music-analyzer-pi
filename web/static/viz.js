@@ -136,7 +136,6 @@ function handleOSC(addr, args) {
 // ============================================================
 // FLASH EFFECTS
 // ============================================================
-let beatTimeout = null;
 function flashBeat() {
   flashOnsetPip('beat');
 }

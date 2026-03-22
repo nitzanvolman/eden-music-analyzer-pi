@@ -134,16 +134,6 @@ header h1 {
   margin-top: 0.25rem;
 }
 
-/* === BEAT CARD === */
-.card.beat-card {
-  transition: background 0.08s, border-color 0.08s, box-shadow 0.08s;
-}
-.card.beat-card.flash {
-  background: rgba(233,69,96,0.15);
-  border-color: var(--accent);
-  box-shadow: 0 0 30px rgba(233,69,96,0.3), inset 0 0 30px rgba(233,69,96,0.05);
-}
-
 /* === ONSET SUITE === */
 .onset-grid {
   display: grid;
@@ -353,27 +343,6 @@ canvas {
   letter-spacing: 0.15em;
   color: var(--text-dim);
   text-transform: uppercase;
-}
-.vocal-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-.vocal-label {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 0.55rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  white-space: nowrap;
-}
-.vocal-bar .meter {
-  flex: 1;
-}
-.meter-fill.vocal {
-  background: linear-gradient(90deg, var(--cyan), #e945a0);
-  box-shadow: 0 0 8px rgba(0,229,255,0.4);
 }
 /* === SCENE / MOOD CARD === */
 .rhythm-scene-row {
